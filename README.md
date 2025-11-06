@@ -4,6 +4,26 @@ Micro Neural Network in pure Mojo - Educational proof-of-concept for learning ne
 
 This is a pure Mojo implementation inspired by [unnet](https://github.com/yourusername/unnet), featuring all neural network operations implemented natively in Mojo for maximum performance.
 
+## Implementation Status
+
+This project provides scaffolding with empty implementations. The following components need to be implemented:
+
+### `grad.mojo` - Autograd
+- [ ] Node struct with computation graph tracking
+- [ ] Operator overloading (+, -, *, ^)
+- [ ] Activation functions (tanh)
+- [ ] Backward propagation
+
+### `nn.mojo` - Neural Network Components
+- [ ] Neuron struct (weights, bias, forward pass)
+- [ ] Layer struct (multiple neurons)
+- [ ] Network struct (multiple layers)
+- [ ] Training loop with gradient descent
+
+### `utils.mojo` - Utilities
+- [ ] Graph traversal (walk)
+- [ ] Visualization helpers
+
 ## Features
 
 - **Pure Mojo**: Entire codebase written in Mojo for maximum performance
@@ -85,25 +105,6 @@ uv run pre-commit run --all-files
 uv run mojo package unnet -o build/unnet.mojopkg
 ```
 
-## Implementation Status
-
-This project provides scaffolding with empty implementations. The following components need to be implemented:
-
-### `grad.mojo` - Autograd
-- [ ] Node struct with computation graph tracking
-- [ ] Operator overloading (+, -, *, ^)
-- [ ] Activation functions (tanh)
-- [ ] Backward propagation
-
-### `nn.mojo` - Neural Network Components
-- [ ] Neuron struct (weights, bias, forward pass)
-- [ ] Layer struct (multiple neurons)
-- [ ] Network struct (multiple layers)
-- [ ] Training loop with gradient descent
-
-### `utils.mojo` - Utilities
-- [ ] Graph traversal (walk)
-- [ ] Visualization helpers
 
 ## Contributing
 
