@@ -34,28 +34,36 @@ struct Op(Stringable):
         return "UnknownOp"
 
 
+alias LeafNode = Node[op = Op.NONE]
+alias AddNode = Node[op = Op.ADD]
+alias SubNode = Node[op = Op.SUB]
+alias MulNode = Node[op = Op.MUL]
+alias PowNode = Node[op = Op.POW]
+alias TanhNode = Node[op = Op.TANH]
+
+alias AnyNode = Variant[
+    LeafNode,
+    AddNode,
+    SubNode,
+    MulNode,
+    PowNode,
+    TanhNode,
+]
+
+
 struct Node[
     op: Op = Op.NONE,
-](ImplicitlyCopyable & Movable):
+](ImplicitlyCopyable & Movable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
 
     Parameters:
         op: Operation type of the node (default: Op.NONE).
     """
 
-    alias AnyNode = Variant[
-        Node[op = Op.NONE],
-        Node[op = Op.ADD],
-        Node[op = Op.SUB],
-        Node[op = Op.MUL],
-        Node[op = Op.POW],
-        Node[op = Op.TANH],
-    ]
-
     var value: Float64
     var grad: Float64
     var name: String
-    var parents: List[Self.AnyNode]
+    var parents: List[AnyNode]
 
     fn __copyinit__(out self, other: Self):
         """Copy initializer for Node."""
@@ -68,7 +76,7 @@ struct Node[
         out self,
         value: Float64,
         name: String = "N/A",
-        parents: List[Self.AnyNode] = List[Self.AnyNode](),
+        parents: List[AnyNode] = List[AnyNode](),
     ):
         """Initialize a node with a value and optional name."""
         self.value = value
@@ -107,3 +115,6 @@ struct Node[
         """Compute gradients via backpropagation."""
         # TODO: Implement backward pass through computation graph
         self.grad = 1.0
+
+    fn write_to(self, mut writer: Some[Writer]):
+        writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
