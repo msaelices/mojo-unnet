@@ -54,10 +54,16 @@ uv run pre-commit install
 ```bash
 uv run pre-commit run --all-files
 ```
-
 The pre-commit hooks will automatically run on every commit and check:
 - UV lock file sync
 - Mojo formatting
+
+### Running Tests
+
+```bash
+# Run one test file
+uv run mojo tests/test_utils.mojo
+```
 
 ## Continuous Integration
 
