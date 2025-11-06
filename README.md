@@ -32,7 +32,7 @@ uv sync --all-groups
 ## Usage
 
 ```mojo
-from mojo_unnet import Network
+from unnet import Network
 
 # TODO: Add usage example once implementation is complete
 fn main():
@@ -43,7 +43,7 @@ fn main():
 
 ```
 mojo-unnet/
-├── mojo_unnet/          # Main package (pure Mojo)
+├── unnet/          # Main package (pure Mojo)
 │   ├── __init__.mojo    # Package initialization
 │   ├── grad.mojo        # Autograd implementation (Node struct)
 │   ├── nn.mojo          # Neural network components (Neuron, Layer, Network)
@@ -69,10 +69,10 @@ uv run pre-commit install
 
 ```bash
 # Format Mojo files
-uv run mojo format mojo_unnet/
+uv run mojo format unnet/
 
 # Check formatting
-uv run mojo format --check mojo_unnet/
+uv run mojo format --check unnet/
 
 # Run all pre-commit checks
 uv run pre-commit run --all-files
@@ -82,7 +82,7 @@ uv run pre-commit run --all-files
 
 ```bash
 # Build Mojo package
-uv run mojo package mojo_unnet -o build/mojo_unnet.mojopkg
+uv run mojo package unnet -o build/unnet.mojopkg
 ```
 
 ## Implementation Status

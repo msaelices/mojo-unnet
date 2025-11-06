@@ -26,19 +26,19 @@ This will install development tools (mblack formatter, mojo-compiler).
 
 Format Mojo files:
 ```bash
-uv run mojo format mojo_unnet/
+uv run mojo format unnet/
 ```
 
 Check formatting without modifying files:
 ```bash
-uv run mojo format --check mojo_unnet/
+uv run mojo format --check unnet/
 ```
 
 ### Building
 
 Build the Mojo package:
 ```bash
-uv run mojo package mojo_unnet -o build/mojo_unnet.mojopkg
+uv run mojo package unnet -o build/unnet.mojopkg
 ```
 
 ## Pre-commit Hooks
