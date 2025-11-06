@@ -49,6 +49,7 @@ alias AnyNode = Variant[
     PowNode,
     TanhNode,
 ]
+alias RawNode = Tuple[String, Float64, Float64]
 
 
 struct Node[
@@ -115,6 +116,30 @@ struct Node[
         """Compute gradients via backpropagation."""
         # TODO: Implement backward pass through computation graph
         self.grad = 1.0
+
+    fn get_parents(self) -> List[RawNode]:
+        """Get the parent nodes of this node."""
+        var parents: List[RawNode] = []
+        for var_p in self.parents:
+            if var_p.isa[AddNode]():
+                add = var_p[AddNode]
+                parents.append((add.name, add.value, add.grad))
+            elif var_p.isa[SubNode]():
+                sub = var_p[SubNode]
+                parents.append((sub.name, sub.value, sub.grad))
+            elif var_p.isa[MulNode]():
+                mul = var_p[MulNode]
+                parents.append((mul.name, mul.value, mul.grad))
+            elif var_p.isa[PowNode]():
+                pow = var_p[PowNode]
+                parents.append((pow.name, pow.value, pow.grad))
+            elif var_p.isa[TanhNode]():
+                tanh = var_p[TanhNode]
+                parents.append((tanh.name, tanh.value, tanh.grad))
+            else:
+                leaf = var_p[LeafNode]
+                parents.append((leaf.name, leaf.value, leaf.grad))
+        return parents^
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
