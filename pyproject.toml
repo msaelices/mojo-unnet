@@ -5,6 +5,9 @@ description = "Micro Neural Network in pure Mojo - Educational proof-of-concept 
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
+dependencies = [
+    "graphviz>=0.21",
+]
 
 [project.urls]
 "Source" = "https://github.com/yourusername/mojo-unnet"
