@@ -1,3 +1,5 @@
+"""Tests for unnet/utils.mojo visualization and graph traversal functions."""
+
 from testing import (
     assert_equal,
     assert_false,
@@ -6,10 +8,135 @@ from testing import (
     TestSuite,
 )
 
+from unnet.grad import Node
 
-def test_dummy():
-    assert_true(True)
-    assert_equal(1 + 1, 2)
+# from unnet.utils import walk, draw  # TODO: Uncomment when Node has op and parents fields
+
+
+def test_node_creation():
+    """Test basic Node creation for utils testing."""
+    var node1 = Node(3.0, "x")
+    var node2 = Node(5.0, "y")
+
+    assert_equal(node1.value, 3.0)
+    assert_equal(node2.value, 5.0)
+    assert_equal(node1.name, "x")
+    assert_equal(node2.name, "y")
+    assert_equal(node1.grad, 0.0)
+    assert_equal(node2.grad, 0.0)
+
+
+def test_node_operations():
+    """Test Node operations that will be used in computation graphs."""
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+
+    # Test addition
+    var c = a + b
+    assert_equal(c.value, 5.0)
+
+    # Test subtraction
+    var d = a - b
+    assert_equal(d.value, -1.0)
+
+    # Test multiplication
+    var e = a * b
+    assert_equal(e.value, 6.0)
+
+    # Test power
+    var f = a**2.0
+    assert_equal(f.value, 4.0)
+
+
+def test_node_tanh():
+    """Test tanh activation function."""
+    var node = Node(0.0, "zero")
+    var result = node.tanh()
+
+    # tanh(0) should be 0
+    assert_equal(result.value, 0.0)
+
+    # Test with positive value
+    var node2 = Node(1.0, "one")
+    var result2 = node2.tanh()
+
+    # tanh(1) ≈ 0.7615941559557649
+    # Using approximate comparison (within tolerance)
+    assert_true(result2.value > 0.76 and result2.value < 0.77)
+
+
+def test_node_backward():
+    """Test backward pass initialization."""
+    var node = Node(5.0, "test")
+    assert_equal(node.grad, 0.0)
+
+    node.backward()
+    assert_equal(node.grad, 1.0)
+
+
+# TODO: Uncomment and implement these tests once Node has op and parents fields
+# def test_walk_single_node():
+#     """Test walk function with a single node."""
+#     var node = Node(5.0, "x")
+#     var nodes, edges = walk(node)
+#
+#     assert_equal(len(nodes), 1)
+#     assert_equal(len(edges), 0)
+#     assert_equal(nodes[0].value, 5.0)
+
+
+# def test_walk_simple_graph():
+#     """Test walk function with a simple computation graph."""
+#     # Create a simple graph: c = a + b
+#     var a = Node(2.0, "a")
+#     var b = Node(3.0, "b")
+#     var c = a + b  # This should create edges from a and b to c
+#
+#     var nodes, edges = walk(c)
+#
+#     # Should have 3 nodes (a, b, c)
+#     assert_equal(len(nodes), 3)
+#     # Should have 2 edges (a->c, b->c)
+#     assert_equal(len(edges), 2)
+
+
+# def test_walk_complex_graph():
+#     """Test walk function with a more complex computation graph."""
+#     # Create graph: d = (a + b) * c
+#     var a = Node(2.0, "a")
+#     var b = Node(3.0, "b")
+#     var c = Node(4.0, "c")
+#     var sum_node = a + b
+#     var d = sum_node * c
+#
+#     var nodes, edges = walk(d)
+#
+#     # Should have 4 nodes (a, b, c, sum_node, d)
+#     assert_true(len(nodes) >= 3)
+#     # Should have multiple edges
+#     assert_true(len(edges) >= 2)
+
+
+# def test_draw_single_node():
+#     """Test draw function with a single node."""
+#     var node = Node(5.0, "x")
+#     var plot = draw(node)
+#
+#     # Just verify that draw returns something (PythonObject)
+#     # More detailed testing would require graphviz inspection
+#     assert_true(plot is not None)
+
+
+# def test_draw_simple_graph():
+#     """Test draw function with a simple computation graph."""
+#     var a = Node(2.0, "a")
+#     var b = Node(3.0, "b")
+#     var c = a + b
+#
+#     var plot = draw(c)
+#
+#     # Verify plot object is created
+#     assert_true(plot is not None)
 
 
 def main():
