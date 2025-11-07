@@ -7,6 +7,9 @@ license = { file = "LICENSE" }
 requires-python = ">=3.11"
 dependencies = [
     "graphviz>=0.21",
+    "jupyter>=1.0.0",
+    "notebook>=7.0.0",
+    "ipykernel>=6.25.0",
 ]
 
 [project.urls]
