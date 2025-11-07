@@ -33,6 +33,9 @@ htmlcov/
 modular/
 .modular/
 
+# Pixi
+.pixi/
+
 # OS
 .DS_Store
 Thumbs.db

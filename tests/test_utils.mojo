@@ -9,8 +9,7 @@ from testing import (
 )
 
 from unnet.grad import Node
-
-# from unnet.utils import walk, draw  # TODO: Uncomment when Node has op and parents fields
+from unnet.utils import walk, draw
 
 
 def test_node_creation():

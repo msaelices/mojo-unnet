@@ -1,0 +1,29 @@
+[workspace]
+authors = ["stream"]
+channels = ["conda-forge", "https://conda.modular.com/max-nightly"]
+description = "Micro Neural Network in pure Mojo - Educational proof-of-concept for learning neural networks"
+homepage = "https://github.com/yourusername/mojo-unnet"
+repository = "https://github.com/yourusername/mojo-unnet"
+license = "MIT"
+license-file = "LICENSE"
+name = "mojo-unnet"
+platforms = ["linux-64", "osx-arm64"]
+version = "0.1.0"
+
+[dependencies]
+mojo = ">=0.25.7.0.dev2025101518,<0.26.0.0"
+python = ">=3.11"
+graphviz = ">=0.21"
+jupyter = ">=1.0.0"
+notebook = ">=7.0.0"
+ipykernel = ">=6.25.0"
+
+[feature.dev.dependencies]
+pre-commit = ">=3.0.0"
+
+[tasks]
+test = "mojo test -I ./unnet tests/"
+
+[environments]
+default = { solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
