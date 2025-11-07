@@ -66,13 +66,6 @@ struct Node[
     var name: String
     var parents: List[AnyNode]
 
-    fn __copyinit__(out self, other: Self):
-        """Copy initializer for Node."""
-        self.value = other.value
-        self.grad = other.grad
-        self.name = other.name
-        self.parents = other.parents.copy()
-
     fn __init__(
         out self,
         value: Float64,
@@ -84,6 +77,13 @@ struct Node[
         self.grad = 0.0
         self.name = name
         self.parents = parents.copy()
+
+    fn __copyinit__(out self, other: Self):
+        """Copy initializer for Node."""
+        self.value = other.value
+        self.grad = other.grad
+        self.name = other.name
+        self.parents = other.parents.copy()
 
     fn __add__(self, other: Node) -> Node[op = Op.ADD]:
         """Add two nodes."""
