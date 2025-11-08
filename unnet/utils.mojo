@@ -1,74 +1,63 @@
 """Utility functions for visualization and graph traversal."""
 
-from .grad import (
-    Node,
-    Op,
-    AnyNode,
-    LeafNode,
-    AddNode,
-    SubNode,
-    MulNode,
-    PowNode,
-    TanhNode,
-    RawNode,
-)
+from .grad import Node, Op
 from python import Python, PythonObject
 
 # Helper functions for graph traversal and visualization
 
 
-fn get_node_id(node: AnyNode) -> String:
+fn get_node_id(node: Node.AnyNode) -> String:
     """Get a unique string identifier for any node variant."""
-    if node.isa[LeafNode]():
-        var n = node[LeafNode]
+    if node.isa[Node.LeafNode]():
+        var n = node[Node.LeafNode]
         return "leaf_" + n.name + "_" + String(n.value)
-    elif node.isa[AddNode]():
-        var n = node[AddNode]
+    elif node.isa[Node.AddNode]():
+        var n = node[Node.AddNode]
         return "add_" + n.name + "_" + String(n.value)
-    elif node.isa[SubNode]():
-        var n = node[SubNode]
+    elif node.isa[Node.SubNode]():
+        var n = node[Node.SubNode]
         return "sub_" + n.name + "_" + String(n.value)
-    elif node.isa[MulNode]():
-        var n = node[MulNode]
+    elif node.isa[Node.MulNode]():
+        var n = node[Node.MulNode]
         return "mul_" + n.name + "_" + String(n.value)
-    elif node.isa[PowNode]():
-        var n = node[PowNode]
+    elif node.isa[Node.PowNode]():
+        var n = node[Node.PowNode]
         return "pow_" + n.name + "_" + String(n.value)
     else:  # TanhNode
-        var n = node[TanhNode]
+        var n = node[Node.TanhNode]
         return "tanh_" + n.name + "_" + String(n.value)
 
 
-fn get_op_string(node: AnyNode) -> String:
+fn get_op_string(node: Node.AnyNode) -> String:
     """Get the operation string for any node variant."""
-    if node.isa[LeafNode]():
+    if node.isa[Node.LeafNode]():
         return ""
-    elif node.isa[AddNode]():
+    elif node.isa[Node.AddNode]():
         return "+"
-    elif node.isa[SubNode]():
+    elif node.isa[Node.SubNode]():
         return "-"
-    elif node.isa[MulNode]():
+    elif node.isa[Node.MulNode]():
         return "*"
-    elif node.isa[PowNode]():
+    elif node.isa[Node.PowNode]():
         return "^"
     else:  # TanhNode
         return "tanh"
 
 
-fn get_parents(node: AnyNode) -> List[AnyNode]:
+fn get_parents(node: Node.AnyNode) -> List[Node.AnyNode]:
     """Get the parent nodes from any node variant."""
-    if node.isa[LeafNode]():
-        return node[LeafNode].parents.copy()
-    elif node.isa[AddNode]():
-        return node[AddNode].parents.copy()
-    elif node.isa[SubNode]():
-        return node[SubNode].parents.copy()
-    elif node.isa[MulNode]():
-        return node[MulNode].parents.copy()
-    elif node.isa[PowNode]():
-        return node[PowNode].parents.copy()
+    if node.isa[Node.LeafNode]():
+        return node[Node.LeafNode].parents.copy()
+    elif node.isa[Node.AddNode]():
+        return node[Node.AddNode].parents.copy()
+    elif node.isa[Node.SubNode]():
+        return node[Node.SubNode].parents.copy()
+    elif node.isa[Node.MulNode]():
+        return node[Node.MulNode].parents.copy()
+    elif node.isa[Node.PowNode]():
+        return node[Node.PowNode].parents.copy()
     else:  # TanhNode
-        return node[TanhNode].parents.copy()
+        return node[Node.TanhNode].parents.copy()
 
 
 fn is_in_list(node_id: String, visited: List[String]) -> Bool:
@@ -79,7 +68,7 @@ fn is_in_list(node_id: String, visited: List[String]) -> Bool:
     return False
 
 
-fn get_node_data(node: AnyNode) -> Tuple[String, Float64, Float64]:
+fn get_node_data(node: Node.AnyNode) -> Node.RawNode:
     """Extract name, value, and grad from any node variant.
 
     Args:
@@ -88,29 +77,29 @@ fn get_node_data(node: AnyNode) -> Tuple[String, Float64, Float64]:
     Returns:
         A tuple of (name, value, grad).
     """
-    if node.isa[LeafNode]():
-        var n = node[LeafNode]
+    if node.isa[Node.LeafNode]():
+        var n = node[Node.LeafNode]
         return (n.name, n.value, n.grad)
-    elif node.isa[AddNode]():
-        var n = node[AddNode]
+    elif node.isa[Node.AddNode]():
+        var n = node[Node.AddNode]
         return (n.name, n.value, n.grad)
-    elif node.isa[SubNode]():
-        var n = node[SubNode]
+    elif node.isa[Node.SubNode]():
+        var n = node[Node.SubNode]
         return (n.name, n.value, n.grad)
-    elif node.isa[MulNode]():
-        var n = node[MulNode]
+    elif node.isa[Node.MulNode]():
+        var n = node[Node.MulNode]
         return (n.name, n.value, n.grad)
-    elif node.isa[PowNode]():
-        var n = node[PowNode]
+    elif node.isa[Node.PowNode]():
+        var n = node[Node.PowNode]
         return (n.name, n.value, n.grad)
     else:  # TanhNode
-        var n = node[TanhNode]
+        var n = node[Node.TanhNode]
         return (n.name, n.value, n.grad)
 
 
 fn walk[
     op: Op = Op.NONE
-](root: Node[op]) -> Tuple[List[RawNode], List[Tuple[String, String]]]:
+](root: Node[op]) -> Tuple[List[Node.RawNode], List[Tuple[String, String]]]:
     """Walk the computation graph and collect nodes and edges.
 
     Parameters:
@@ -123,12 +112,12 @@ fn walk[
         A tuple of (nodes, edges) where nodes is a list of raw node data (name, value, grad)
         and edges is a list of (parent_id, child_id) tuples representing connections.
     """
-    var nodes = List[RawNode]()
+    var nodes = List[Node.RawNode]()
     var edges = List[Tuple[String, String]]()
     var visited = List[String]()
 
     # Internal stack for traversal
-    var stack = List[AnyNode]()
+    var stack = List[Node.AnyNode]()
     stack.append(root)
 
     while len(stack) > 0:
@@ -169,10 +158,10 @@ fn draw[op: Op = Op.NONE](graph: Node[op]) raises -> PythonObject:
     var Digraph = Python.import_module("graphviz").Digraph
     var plot = Digraph(format="svg", graph_attr={"rankdir": "LR"})
 
-    # Internal traversal using AnyNode
+    # Internal traversal using Node.AnyNode
     var node_map = Dict[String, Tuple[String, Float64, Float64, String]]()
     var visited = List[String]()
-    var stack = List[AnyNode]()
+    var stack = List[Node.AnyNode]()
     stack.append(graph)
 
     while len(stack) > 0:

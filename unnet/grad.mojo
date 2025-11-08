@@ -34,24 +34,6 @@ struct Op(Stringable):
         return "UnknownOp"
 
 
-alias LeafNode = Node[op = Op.NONE]
-alias AddNode = Node[op = Op.ADD]
-alias SubNode = Node[op = Op.SUB]
-alias MulNode = Node[op = Op.MUL]
-alias PowNode = Node[op = Op.POW]
-alias TanhNode = Node[op = Op.TANH]
-
-alias AnyNode = Variant[
-    LeafNode,
-    AddNode,
-    SubNode,
-    MulNode,
-    PowNode,
-    TanhNode,
-]
-alias RawNode = Tuple[String, Float64, Float64]
-
-
 struct Node[
     op: Op = Op.NONE,
 ](ImplicitlyCopyable & Movable, Writable):
@@ -61,16 +43,34 @@ struct Node[
         op: Operation type of the node (default: Op.NONE).
     """
 
+    # Type aliases
+    alias LeafNode = Node[op = Op.NONE]
+    alias AddNode = Node[op = Op.ADD]
+    alias SubNode = Node[op = Op.SUB]
+    alias MulNode = Node[op = Op.MUL]
+    alias PowNode = Node[op = Op.POW]
+    alias TanhNode = Node[op = Op.TANH]
+
+    alias AnyNode = Variant[
+        Self.LeafNode,
+        Self.AddNode,
+        Self.SubNode,
+        Self.MulNode,
+        Self.PowNode,
+        Self.TanhNode,
+    ]
+    alias RawNode = Tuple[String, Float64, Float64]
+
     var value: Float64
     var grad: Float64
     var name: String
-    var parents: List[AnyNode]
+    var parents: List[Self.AnyNode]
 
     fn __init__(
         out self,
         value: Float64,
         name: String = "N/A",
-        parents: List[AnyNode] = List[AnyNode](),
+        parents: List[Self.AnyNode] = List[Self.AnyNode](),
     ):
         """Initialize a node with a value and optional name."""
         self.value = value
@@ -117,27 +117,27 @@ struct Node[
         # TODO: Implement backward pass through computation graph
         self.grad = 1.0
 
-    fn get_parents(self) -> List[RawNode]:
+    fn get_parents(self) -> List[Self.RawNode]:
         """Get the parent nodes of this node."""
-        var parents: List[RawNode] = []
+        var parents: List[Self.RawNode] = []
         for var_p in self.parents:
-            if var_p.isa[AddNode]():
-                add = var_p[AddNode]
+            if var_p.isa[Self.AddNode]():
+                add = var_p[Self.AddNode]
                 parents.append((add.name, add.value, add.grad))
-            elif var_p.isa[SubNode]():
-                sub = var_p[SubNode]
+            elif var_p.isa[Self.SubNode]():
+                sub = var_p[Self.SubNode]
                 parents.append((sub.name, sub.value, sub.grad))
-            elif var_p.isa[MulNode]():
-                mul = var_p[MulNode]
+            elif var_p.isa[Self.MulNode]():
+                mul = var_p[Self.MulNode]
                 parents.append((mul.name, mul.value, mul.grad))
-            elif var_p.isa[PowNode]():
-                pow = var_p[PowNode]
+            elif var_p.isa[Self.PowNode]():
+                pow = var_p[Self.PowNode]
                 parents.append((pow.name, pow.value, pow.grad))
-            elif var_p.isa[TanhNode]():
-                tanh = var_p[TanhNode]
+            elif var_p.isa[Self.TanhNode]():
+                tanh = var_p[Self.TanhNode]
                 parents.append((tanh.name, tanh.value, tanh.grad))
             else:
-                leaf = var_p[LeafNode]
+                leaf = var_p[Self.LeafNode]
                 parents.append((leaf.name, leaf.value, leaf.grad))
         return parents^
 

@@ -3,12 +3,12 @@
 from .grad import Node
 
 
-struct Neuron:
+struct Neuron(Movable):
     """Single neuron with weights and bias."""
 
     # TODO: Add weights and bias fields
 
-    fn __init__(inoutself):
+    fn __init__(out self):
         """Initialize a neuron with random weights."""
         # TODO: Implement initialization
         pass
@@ -19,12 +19,12 @@ struct Neuron:
         return Node(0.0)
 
 
-struct Layer:
+struct Layer(Movable):
     """Layer of neurons."""
 
     # TODO: Add neurons field
 
-    fn __init__(inoutself, num_neurons: Int, num_inputs: Int):
+    fn __init__(out self, num_neurons: Int, num_inputs: Int):
         """Initialize a layer with random neurons."""
         # TODO: Implement initialization
         pass
@@ -33,15 +33,15 @@ struct Layer:
         """Forward pass through the layer."""
         # TODO: Implement forward pass through all neurons
         var result = List[Node]()
-        return result
+        return result^
 
 
-struct Network:
+struct Network(Movable):
     """Multi-layer neural network."""
 
     # TODO: Add layers field
 
-    fn __init__(inoutself):
+    fn __init__(out self):
         """Initialize an empty network."""
         # TODO: Implement initialization
         pass
@@ -66,4 +66,4 @@ struct Network:
         """Create a network with specified architecture."""
         # TODO: Implement network creation
         var net = Network()
-        return net
+        return net^
