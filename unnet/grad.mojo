@@ -1,6 +1,7 @@
 """Computational graph and automatic differentiation."""
 
 import math
+from memory import UnsafePointerV2
 
 
 struct Op(EqualityComparable, Stringable, ImplicitlyCopyable & Movable):
@@ -44,23 +45,51 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     var op: Op
     var grad: Float64
     var name: String
-    var parent1: Optional[Self]
-    var parent2: Optional[Self]
+    var parent1_ptr: UnsafePointerV2[Node, origin=MutAnyOrigin]
+    var parent2_ptr: UnsafePointerV2[Node, origin=MutAnyOrigin]
 
     fn __init__(
         out self,
         value: Float64,
+        name: String,
+    ):
+        """Initialize a node with a value and optional name."""
+        self.value = value
+        self.name = name
+        self.grad = 0.0
+        self.op = Op.NONE
+        self.parent1_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
+        self.parent2_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
+
+    fn __init__(
+        out self,
+        value: Float64,
+        op: Op,
+        mut parent: Node,
         name: String = "N/A",
-        op: Op = Op.NONE,
-        parent1: Optional[Node] = None,
-        parent2: Optional[Node] = None,
     ):
         """Initialize a node with a value and optional name."""
         self.value = value
         self.op = op
         self.name = name
-        self.parent1 = parent1
-        self.parent2 = parent2
+        self.parent1_ptr = UnsafePointerV2(to=parent)
+        self.parent2_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
+        self.grad = 0.0
+
+    fn __init__(
+        out self,
+        value: Float64,
+        op: Op,
+        mut parent1: Node,
+        mut parent2: Node,
+        name: String = "N/A",
+    ):
+        """Initialize a node with a value and optional name."""
+        self.value = value
+        self.op = op
+        self.name = name
+        self.parent1_ptr = UnsafePointerV2(to=parent1)
+        self.parent2_ptr = UnsafePointerV2(to=parent1)
         self.grad = 0.0
 
     fn __copyinit__(out self, other: Self):
@@ -69,14 +98,14 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         self.op = other.op
         self.grad = other.grad
         self.name = other.name
-        self.parent1 = other.parent1
-        self.parent2 = other.parent2
+        self.parent1_ptr = other.parent1_ptr
+        self.parent2_ptr = other.parent2_ptr
 
     fn __eq__(self, other: Self) -> Bool:
         # TODO: Consider comparing parents as well
         return self.value == other.value and self.name == other.name
 
-    fn __add__(self, other: Node) -> Node:
+    fn __add__(mut self, mut other: Node) -> Node:
         """Add two nodes."""
         return Node(
             op=Op.ADD,
@@ -85,7 +114,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
             parent2=other,
         )
 
-    fn __sub__(self, other: Node) -> Node:
+    fn __sub__(mut self, mut other: Node) -> Node:
         """Subtract two nodes."""
         return Node(
             op=Op.SUB,
@@ -94,7 +123,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
             parent2=other,
         )
 
-    fn __mul__(self, other: Node) -> Node:
+    fn __mul__(mut self, mut other: Node) -> Node:
         """Multiply two nodes."""
         return Node(
             value=self.value * other.value,
@@ -103,21 +132,21 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
             parent2=other,
         )
 
-    fn __pow__(self, exponent: Float64) -> Node:
+    fn __pow__(mut self, exponent: Float64) -> Node:
         """Raise node to a power."""
         return Node(
             value=self.value**exponent,
             op=Op.POW,
-            parent1=self,
+            parent=self,
         )
 
-    fn tanh(self) -> Node:
+    fn tanh(mut self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result = math.tanh(self.value)
         return Node(
             value=result,
             op=Op.TANH,
-            parent1=self,
+            parent=self,
         )
 
     fn backward(mut self):
@@ -130,9 +159,9 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
 
         @parameter
         if i == 0:
-            return self.parent1
+            return self.parent1_ptr[]
         else:
-            return self.parent2
+            return self.parent2_ptr[]
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
