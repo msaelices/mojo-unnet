@@ -1,6 +1,6 @@
 """Utility functions for visualization and graph traversal."""
 
-from .grad import Node, Op
+from .grad import Edge, Node, Op
 from python import Python, PythonObject
 
 # Helper functions for graph traversal and visualization
@@ -22,62 +22,60 @@ fn get_node_id(node: Node) -> String:
         return String("tanh_", node.name, "_", node.value)
 
 
-fn get_op_string(node: Node) -> String:
-    """Get the operation string for any node variant."""
-    if node.op == Op.NONE:
-        return ""
-    elif node.op == Op.ADD:
-        return "+"
-    elif node.op == Op.SUB:
-        return "-"
-    elif node.op == Op.MUL:
-        return "*"
-    elif node.op == Op.POW:
-        return "^"
-    else:  # Tanh
-        return "tanh"
+# fn get_op_string(node: Node) -> String:
+#     """Get the operation string for any node variant."""
+#     if node.op == Op.NONE:
+#         return ""
+#     elif node.op == Op.ADD:
+#         return "+"
+#     elif node.op == Op.SUB:
+#         return "-"
+#     elif node.op == Op.MUL:
+#         return "*"
+#     elif node.op == Op.POW:
+#         return "^"
+#     else:  # Tanh
+#         return "tanh"
 
 
-fn is_in_list(node_id: String, visited: List[String]) -> Bool:
-    """Check if a node ID is in the visited list."""
-    for i in range(len(visited)):
-        if visited[i] == node_id:
-            return True
-    return False
+# fn is_in_list(node_id: String, visited: List[String]) -> Bool:
+#     """Check if a node ID is in the visited list."""
+#     for i in range(len(visited)):
+#         if visited[i] == node_id:
+#             return True
+#     return False
 
 
-fn get_node_data(node: Node) -> Node.RawNode:
-    """Extract name, value, and grad from any node variant.
+# fn get_node_data(node: Node) -> Node.RawNode:
+#     """Extract name, value, and grad from any node variant.
+#
+#     Args:
+#         node: The node to extract data from.
+#
+#     Returns:
+#         A tuple of (name, value, grad).
+#     """
+#     if node.isa[Node.LeafNode]():
+#         var n = node[Node.LeafNode]
+#         return (node.name, node.value, node.grad)
+#     elif node.isa[Node.AddNode]():
+#         var n = node[Node.AddNode]
+#         return (node.name, node.value, node.grad)
+#     elif node.isa[Node.SubNode]():
+#         var n = node[Node.SubNode]
+#         return (node.name, node.value, node.grad)
+#     elif node.isa[Node.MulNode]():
+#         var n = node[Node.MulNode]
+#         return (node.name, node.value, node.grad)
+#     elif node.isa[Node.PowNode]():
+#         var n = node[Node.PowNode]
+#         return (node.name, node.value, node.grad)
+#     else:  # TanhNode
+#         var n = node[Node.TanhNode]
+#         return (node.name, node.value, node.grad)
 
-    Args:
-        node: The node to extract data from.
 
-    Returns:
-        A tuple of (name, value, grad).
-    """
-    if node.isa[Node.LeafNode]():
-        var n = node[Node.LeafNode]
-        return (node.name, node.value, node.grad)
-    elif node.isa[Node.AddNode]():
-        var n = node[Node.AddNode]
-        return (node.name, node.value, node.grad)
-    elif node.isa[Node.SubNode]():
-        var n = node[Node.SubNode]
-        return (node.name, node.value, node.grad)
-    elif node.isa[Node.MulNode]():
-        var n = node[Node.MulNode]
-        return (node.name, node.value, node.grad)
-    elif node.isa[Node.PowNode]():
-        var n = node[Node.PowNode]
-        return (node.name, node.value, node.grad)
-    else:  # TanhNode
-        var n = node[Node.TanhNode]
-        return (node.name, node.value, node.grad)
-
-
-fn walk[
-    op: Op = Op.NONE
-](root: Node[op]) -> Tuple[List[Node.RawNode], List[Tuple[String, String]]]:
+fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
     """Walk the computation graph and collect nodes and edges.
 
     Parameters:
@@ -90,36 +88,33 @@ fn walk[
         A tuple of (nodes, edges) where nodes is a list of raw node data (name, value, grad)
         and edges is a list of (parent_id, child_id) tuples representing connections.
     """
-    var nodes = List[Node.RawNode]()
-    var edges = List[Tuple[String, String]]()
-    var visited = List[String]()
+    var nodes = List[Node]()
+    var edges = List[Edge]()
+    var visited = List[Node]()
 
     # Internal stack for traversal
-    var stack = List[Node.AnyNode]()
+    var stack = List[Node]()
     stack.append(root)
 
     while len(stack) > 0:
         var current = stack.pop()
-        var node_id = get_node_id(current)
 
         # Skip if already visited
-        if is_in_list(node_id, visited):
+        if current in visited:
             continue
 
-        visited.append(node_id)
+        visited.append(current)
         var node_data = get_node_data(current)
-        nodes.append(node_data)
+        nodes.append(current)
 
         # Process parents
-        ref parent1, parent2 = current.get_parent[0], current.get_parent[1]
+        ref parent1, parent2 = current.get_parent[0](), current.get_parent[1]()
         if parent1:
-            var parent1_id = get_node_id(parent1)
-            edges.append((parent1_id, node_id))
-            stack.append(parent1)
+            edges.append((parent1.value(), current))
+            stack.append(parent1.value())
         if parent2:
-            var parent2_id = get_node_id(parent2)
-            edges.append((parent2_id, node_id))
-            stack.append(parent2)
+            edges.append((parent2.value(), current))
+            stack.append(parent2.value())
 
     return nodes^, edges^
 
@@ -142,7 +137,7 @@ fn draw(graph: Node) raises -> PythonObject:
     # Internal traversal using Node.AnyNode
     var node_map = Dict[String, Tuple[String, Float64, Float64, String]]()
     var visited = List[String]()
-    var stack = List[Node.AnyNode]()
+    var stack = List[Node]()
     stack.append(graph)
 
     while len(stack) > 0:
@@ -157,7 +152,7 @@ fn draw(graph: Node) raises -> PythonObject:
         var name = node_data[0]
         var value = node_data[1]
         var grad = node_data[2]
-        var op_str = get_op_string(current)
+        var op_str = String(current.op)
         node_map[node_id] = (name, value, grad, op_str)
 
         # Draw this node

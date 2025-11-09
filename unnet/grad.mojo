@@ -3,7 +3,7 @@
 import math
 
 
-struct Op(Stringable, ImplicitlyCopyable & Movable):
+struct Op(EqualityComparable, Stringable, ImplicitlyCopyable & Movable):
     alias NONE: Int = 0
     alias ADD: Int = 1
     alias SUB: Int = 2
@@ -36,7 +36,7 @@ struct Op(Stringable, ImplicitlyCopyable & Movable):
         return "UnknownOp"
 
 
-struct Node(ImplicitlyCopyable & Movable, Writable):
+struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
@@ -50,17 +50,17 @@ struct Node(ImplicitlyCopyable & Movable, Writable):
     fn __init__(
         out self,
         value: Float64,
-        op: Op = Op.NONE,
         name: String = "N/A",
+        op: Op = Op.NONE,
         parent1: Optional[Node] = None,
         parent2: Optional[Node] = None,
     ):
         """Initialize a node with a value and optional name."""
         self.value = value
-        self.grad = 0.0
         self.name = name
         self.parent1 = parent1
         self.parent2 = parent2
+        self.grad = 0.0
 
     fn __copyinit__(out self, other: Self):
         """Copy initializer for Node."""
@@ -70,6 +70,10 @@ struct Node(ImplicitlyCopyable & Movable, Writable):
         self.name = other.name
         self.parent1 = other.parent1
         self.parent2 = other.parent2
+
+    fn __eq__(self, other: Self) -> Bool:
+        # TODO: Consider comparing parents as well
+        return self.value == other.value and self.name == other.name
 
     fn __add__(self, other: Node) -> Node:
         """Add two nodes."""
@@ -131,3 +135,6 @@ struct Node(ImplicitlyCopyable & Movable, Writable):
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
+
+
+alias Edge = Tuple[Node, Node]
