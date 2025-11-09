@@ -57,6 +57,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     ):
         """Initialize a node with a value and optional name."""
         self.value = value
+        self.op = op
         self.name = name
         self.parent1 = parent1
         self.parent2 = parent2
