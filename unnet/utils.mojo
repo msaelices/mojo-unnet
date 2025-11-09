@@ -22,57 +22,16 @@ fn get_node_id(node: Node) -> String:
         return String("tanh_", node.name, "_", node.value)
 
 
-# fn get_op_string(node: Node) -> String:
-#     """Get the operation string for any node variant."""
-#     if node.op == Op.NONE:
-#         return ""
-#     elif node.op == Op.ADD:
-#         return "+"
-#     elif node.op == Op.SUB:
-#         return "-"
-#     elif node.op == Op.MUL:
-#         return "*"
-#     elif node.op == Op.POW:
-#         return "^"
-#     else:  # Tanh
-#         return "tanh"
+fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
+    """Extract name, value, and grad from a node.
 
+    Args:
+        node: The node to extract data from.
 
-# fn is_in_list(node_id: String, visited: List[String]) -> Bool:
-#     """Check if a node ID is in the visited list."""
-#     for i in range(len(visited)):
-#         if visited[i] == node_id:
-#             return True
-#     return False
-
-
-# fn get_node_data(node: Node) -> Node.RawNode:
-#     """Extract name, value, and grad from any node variant.
-#
-#     Args:
-#         node: The node to extract data from.
-#
-#     Returns:
-#         A tuple of (name, value, grad).
-#     """
-#     if node.isa[Node.LeafNode]():
-#         var n = node[Node.LeafNode]
-#         return (node.name, node.value, node.grad)
-#     elif node.isa[Node.AddNode]():
-#         var n = node[Node.AddNode]
-#         return (node.name, node.value, node.grad)
-#     elif node.isa[Node.SubNode]():
-#         var n = node[Node.SubNode]
-#         return (node.name, node.value, node.grad)
-#     elif node.isa[Node.MulNode]():
-#         var n = node[Node.MulNode]
-#         return (node.name, node.value, node.grad)
-#     elif node.isa[Node.PowNode]():
-#         var n = node[Node.PowNode]
-#         return (node.name, node.value, node.grad)
-#     else:  # TanhNode
-#         var n = node[Node.TanhNode]
-#         return (node.name, node.value, node.grad)
+    Returns:
+        A tuple of (name, value, grad).
+    """
+    return (node.name, node.value, node.grad)
 
 
 fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
@@ -104,7 +63,6 @@ fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
             continue
 
         visited.append(current)
-        var node_data = get_node_data(current)
         nodes.append(current)
 
         # Process parents
@@ -122,9 +80,6 @@ fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
 fn draw(graph: Node) raises -> PythonObject:
     """Create a graphviz visualization of the computation graph.
 
-    Parameters:
-        op: Operation type of the root node.
-
     Args:
         graph: The root node of the computation graph to visualize.
 
@@ -134,9 +89,9 @@ fn draw(graph: Node) raises -> PythonObject:
     var Digraph = Python.import_module("graphviz").Digraph
     var plot = Digraph(format="svg", graph_attr={"rankdir": "LR"})
 
-    # Internal traversal using Node.AnyNode
+    # Internal traversal using Node objects
     var node_map = Dict[String, Tuple[String, Float64, Float64, String]]()
-    var visited = List[String]()
+    var visited = List[Node]()
     var stack = List[Node]()
     stack.append(graph)
 
@@ -144,10 +99,10 @@ fn draw(graph: Node) raises -> PythonObject:
         var current = stack.pop()
         var node_id = get_node_id(current)
 
-        if is_in_list(node_id, visited):
+        if current in visited:
             continue
 
-        visited.append(node_id)
+        visited.append(current)
         var node_data = get_node_data(current)
         var name = node_data[0]
         var value = node_data[1]
@@ -166,20 +121,23 @@ fn draw(graph: Node) raises -> PythonObject:
             plot.edge(op_node_id, node_id)
 
         # Process parents and create edges
-        ref parent1, parent2 = get_parent[0](current), get_parent[1](current)
+        ref parent1 = current.get_parent[0]()
+        ref parent2 = current.get_parent[1]()
         if parent1:
-            var parent1_id = get_node_id(parent1)
+            var parent1_node = parent1.value()
+            var parent1_id = get_node_id(parent1_node)
             if len(op_str) > 0:
                 plot.edge(parent1_id, node_id + "_op")
             else:
                 plot.edge(parent1_id, node_id)
-            stack.append(parent1)
+            stack.append(parent1_node)
         if parent2:
-            var parent2_id = get_node_id(parent2)
+            var parent2_node = parent2.value()
+            var parent2_id = get_node_id(parent2_node)
             if len(op_str) > 0:
                 plot.edge(parent2_id, node_id + "_op")
             else:
                 plot.edge(parent2_id, node_id)
-            stack.append(parent2)
+            stack.append(parent2_node)
 
     return plot
