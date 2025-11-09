@@ -1,7 +1,6 @@
 """Computational graph and automatic differentiation."""
 
 import math
-from utils import Variant
 
 
 struct Op(Stringable, ImplicitlyCopyable & Movable):
@@ -39,17 +38,14 @@ struct Op(Stringable, ImplicitlyCopyable & Movable):
 
 struct Node(ImplicitlyCopyable & Movable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
-
-    Parameters:
-        op: Operation type of the node (default: Op.NONE).
     """
 
     var value: Float64
     var op: Op
     var grad: Float64
     var name: String
-    var parent1: Optional[Node]
-    var parent2: Optional[Node]
+    var parent1: Optional[Self]
+    var parent2: Optional[Self]
 
     fn __init__(
         out self,
