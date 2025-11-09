@@ -6,58 +6,36 @@ from python import Python, PythonObject
 # Helper functions for graph traversal and visualization
 
 
-fn get_node_id(node: Node.AnyNode) -> String:
+fn get_node_id(node: Node) -> String:
     """Get a unique string identifier for any node variant."""
-    if node.isa[Node.LeafNode]():
-        var n = node[Node.LeafNode]
-        return "leaf_" + n.name + "_" + String(n.value)
-    elif node.isa[Node.AddNode]():
-        var n = node[Node.AddNode]
-        return "add_" + n.name + "_" + String(n.value)
-    elif node.isa[Node.SubNode]():
-        var n = node[Node.SubNode]
-        return "sub_" + n.name + "_" + String(n.value)
-    elif node.isa[Node.MulNode]():
-        var n = node[Node.MulNode]
-        return "mul_" + n.name + "_" + String(n.value)
-    elif node.isa[Node.PowNode]():
-        var n = node[Node.PowNode]
-        return "pow_" + n.name + "_" + String(n.value)
-    else:  # TanhNode
-        var n = node[Node.TanhNode]
-        return "tanh_" + n.name + "_" + String(n.value)
+    if node.op == Op.NONE:
+        return String("leaf_", node.name, "_", node.value)
+    elif node.op == Op.ADD:
+        return String("add_", node.name, "_", node.value)
+    elif node.op == Op.SUB:
+        return String("sub_", node.name, "_", node.value)
+    elif node.op == Op.MUL:
+        return String("mul_", node.name, "_", node.value)
+    elif node.op == Op.POW:
+        return String("pow_", node.name, "_", node.value)
+    else:  # Tanh
+        return String("tanh_", node.name, "_", node.value)
 
 
-fn get_op_string(node: Node.AnyNode) -> String:
+fn get_op_string(node: Node) -> String:
     """Get the operation string for any node variant."""
-    if node.isa[Node.LeafNode]():
+    if node.op == Op.NONE:
         return ""
-    elif node.isa[Node.AddNode]():
+    elif node.op == Op.ADD:
         return "+"
-    elif node.isa[Node.SubNode]():
+    elif node.op == Op.SUB:
         return "-"
-    elif node.isa[Node.MulNode]():
+    elif node.op == Op.MUL:
         return "*"
-    elif node.isa[Node.PowNode]():
+    elif node.op == Op.POW:
         return "^"
-    else:  # TanhNode
+    else:  # Tanh
         return "tanh"
-
-
-fn get_parent[i: Int](node: Node.AnyNode) -> Optional[Node.AnyNode]:
-    """Get the parent nodes from any node variant."""
-    if node.isa[Node.LeafNode]():
-        return node[Node.LeafNode].get_parent[i]()
-    elif node.isa[Node.AddNode]():
-        return node[Node.AddNode].get_parent[i]()
-    elif node.isa[Node.SubNode]():
-        return node[Node.SubNode].get_parent[i]()
-    elif node.isa[Node.MulNode]():
-        return node[Node.MulNode].get_parent[i]()
-    elif node.isa[Node.PowNode]():
-        return node[Node.PowNode].get_parent[i]()
-    else:  # TanhNode
-        return node[Node.TanhNode].get_parent[i]()
 
 
 fn is_in_list(node_id: String, visited: List[String]) -> Bool:
@@ -68,7 +46,7 @@ fn is_in_list(node_id: String, visited: List[String]) -> Bool:
     return False
 
 
-fn get_node_data(node: Node.AnyNode) -> Node.RawNode:
+fn get_node_data(node: Node) -> Node.RawNode:
     """Extract name, value, and grad from any node variant.
 
     Args:
@@ -79,22 +57,22 @@ fn get_node_data(node: Node.AnyNode) -> Node.RawNode:
     """
     if node.isa[Node.LeafNode]():
         var n = node[Node.LeafNode]
-        return (n.name, n.value, n.grad)
+        return (node.name, node.value, node.grad)
     elif node.isa[Node.AddNode]():
         var n = node[Node.AddNode]
-        return (n.name, n.value, n.grad)
+        return (node.name, node.value, node.grad)
     elif node.isa[Node.SubNode]():
         var n = node[Node.SubNode]
-        return (n.name, n.value, n.grad)
+        return (node.name, node.value, node.grad)
     elif node.isa[Node.MulNode]():
         var n = node[Node.MulNode]
-        return (n.name, n.value, n.grad)
+        return (node.name, node.value, node.grad)
     elif node.isa[Node.PowNode]():
         var n = node[Node.PowNode]
-        return (n.name, n.value, n.grad)
+        return (node.name, node.value, node.grad)
     else:  # TanhNode
         var n = node[Node.TanhNode]
-        return (n.name, n.value, n.grad)
+        return (node.name, node.value, node.grad)
 
 
 fn walk[
@@ -133,7 +111,7 @@ fn walk[
         nodes.append(node_data)
 
         # Process parents
-        ref parent1, parent2 = get_parent[0](current), get_parent[1](current)
+        ref parent1, parent2 = current.get_parent[0], current.get_parent[1]
         if parent1:
             var parent1_id = get_node_id(parent1)
             edges.append((parent1_id, node_id))
@@ -146,7 +124,7 @@ fn walk[
     return nodes^, edges^
 
 
-fn draw[op: Op = Op.NONE](graph: Node[op]) raises -> PythonObject:
+fn draw(graph: Node) raises -> PythonObject:
     """Create a graphviz visualization of the computation graph.
 
     Parameters:
