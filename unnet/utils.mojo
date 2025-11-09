@@ -44,20 +44,20 @@ fn get_op_string(node: Node.AnyNode) -> String:
         return "tanh"
 
 
-fn get_parents(node: Node.AnyNode) -> List[Node.AnyNode]:
+fn get_parent[i: Int](node: Node.AnyNode) -> Optional[Node.AnyNode]:
     """Get the parent nodes from any node variant."""
     if node.isa[Node.LeafNode]():
-        return node[Node.LeafNode].parents.copy()
+        return node[Node.LeafNode].get_parent[i]()
     elif node.isa[Node.AddNode]():
-        return node[Node.AddNode].parents.copy()
+        return node[Node.AddNode].get_parent[i]()
     elif node.isa[Node.SubNode]():
-        return node[Node.SubNode].parents.copy()
+        return node[Node.SubNode].get_parent[i]()
     elif node.isa[Node.MulNode]():
-        return node[Node.MulNode].parents.copy()
+        return node[Node.MulNode].get_parent[i]()
     elif node.isa[Node.PowNode]():
-        return node[Node.PowNode].parents.copy()
+        return node[Node.PowNode].get_parent[i]()
     else:  # TanhNode
-        return node[Node.TanhNode].parents.copy()
+        return node[Node.TanhNode].get_parent[i]()
 
 
 fn is_in_list(node_id: String, visited: List[String]) -> Bool:
@@ -133,12 +133,15 @@ fn walk[
         nodes.append(node_data)
 
         # Process parents
-        var parents = get_parents(current)
-        for i in range(len(parents)):
-            var parent = parents[i]
-            var parent_id = get_node_id(parent)
-            edges.append((parent_id, node_id))
-            stack.append(parent)
+        ref parent1, parent2 = get_parent[0](current), get_parent[1](current)
+        if parent1:
+            var parent1_id = get_node_id(parent1)
+            edges.append((parent1_id, node_id))
+            stack.append(parent1)
+        if parent2:
+            var parent2_id = get_node_id(parent2)
+            edges.append((parent2_id, node_id))
+            stack.append(parent2)
 
     return nodes^, edges^
 
@@ -190,17 +193,20 @@ fn draw[op: Op = Op.NONE](graph: Node[op]) raises -> PythonObject:
             plot.edge(op_node_id, node_id)
 
         # Process parents and create edges
-        var parents = get_parents(current)
-        for i in range(len(parents)):
-            var parent = parents[i]
-            var parent_id = get_node_id(parent)
-
-            # Connect parent to this node's operation (if it has one)
+        ref parent1, parent2 = get_parent[0](current), get_parent[1](current)
+        if parent1:
+            var parent1_id = get_node_id(parent1)
             if len(op_str) > 0:
-                plot.edge(parent_id, node_id + "_op")
+                plot.edge(parent1_id, node_id + "_op")
             else:
-                plot.edge(parent_id, node_id)
-
-            stack.append(parent)
+                plot.edge(parent1_id, node_id)
+            stack.append(parent1)
+        if parent2:
+            var parent2_id = get_node_id(parent2)
+            if len(op_str) > 0:
+                plot.edge(parent2_id, node_id + "_op")
+            else:
+                plot.edge(parent2_id, node_id)
+            stack.append(parent2)
 
     return plot

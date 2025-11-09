@@ -18,6 +18,9 @@ struct Op(Stringable):
     fn __init__(out self, v: Int):
         self.v = v
 
+    fn __eq__(self, other: Self) -> Bool:
+        return self.v == other.v
+
     fn __str__(self) -> String:
         if self.v == Op.NONE:
             return ""
@@ -64,82 +67,102 @@ struct Node[
     var value: Float64
     var grad: Float64
     var name: String
-    var parents: List[Self.AnyNode]
+    var parent1: Optional[Self.AnyNode]
+    var parent2: Optional[Self.AnyNode]
 
     fn __init__(
         out self,
         value: Float64,
         name: String = "N/A",
-        parents: List[Self.AnyNode] = List[Self.AnyNode](),
     ):
         """Initialize a node with a value and optional name."""
         self.value = value
         self.grad = 0.0
         self.name = name
-        self.parents = parents.copy()
+        self.parent1 = None
+        self.parent2 = None
+
+    fn __init__(
+        out self,
+        value: Float64,
+        parent1: Self.AnyNode,
+        name: String = "N/A",
+    ):
+        """Initialize a node with a value and optional name."""
+        self.value = value
+        self.grad = 0.0
+        self.name = name
+        self.parent1 = parent1
+        self.parent2 = None
+
+    fn __init__(
+        out self,
+        value: Float64,
+        parent1: Self.AnyNode,
+        parent2: Self.AnyNode,
+        name: String = "N/A",
+    ):
+        """Initialize a node with a value and optional name."""
+        self.value = value
+        self.grad = 0.0
+        self.name = name
+        self.parent1 = parent1
+        self.parent2 = parent2
 
     fn __copyinit__(out self, other: Self):
         """Copy initializer for Node."""
         self.value = other.value
         self.grad = other.grad
         self.name = other.name
-        self.parents = other.parents.copy()
+        self.parent1 = other.parent1
+        self.parent2 = other.parent2
 
     fn __add__(self, other: Node) -> Node[op = Op.ADD]:
         """Add two nodes."""
         return Node[op = Op.ADD](
-            self.value + other.value, parents=[self, other]
+            self.value + other.value,
+            parent1=self,
+            parent2=other,
         )
 
     fn __sub__(self, other: Node) -> Node[op = Op.SUB]:
         """Subtract two nodes."""
         return Node[op = Op.SUB](
-            self.value - other.value, parents=[self, other]
+            self.value - other.value,
+            parent1=self,
+            parent2=other,
         )
 
     fn __mul__(self, other: Node) -> Node[op = Op.MUL]:
         """Multiply two nodes."""
         return Node[op = Op.MUL](
-            self.value * other.value, parents=[self, other]
+            self.value * other.value,
+            parent1=self,
+            parent2=other,
         )
 
     fn __pow__(self, exponent: Float64) -> Node[op = Op.POW]:
         """Raise node to a power."""
-        return Node[op = Op.POW](self.value**exponent, parents=[self])
+        return Node[op = Op.POW](self.value**exponent, parent1=self)
 
     fn tanh(self) -> Node[op = Op.TANH]:
         """Apply hyperbolic tangent activation."""
         var result = math.tanh(self.value)
-        return Node[op = Op.TANH](result, parents=[self])
+        return Node[op = Op.TANH](result, parent1=self)
 
     fn backward(mut self):
         """Compute gradients via backpropagation."""
         # TODO: Implement backward pass through computation graph
         self.grad = 1.0
 
-    fn get_parents(self) -> List[Self.RawNode]:
-        """Get the parent nodes of this node."""
-        var parents: List[Self.RawNode] = []
-        for var_p in self.parents:
-            if var_p.isa[Self.AddNode]():
-                add = var_p[Self.AddNode]
-                parents.append((add.name, add.value, add.grad))
-            elif var_p.isa[Self.SubNode]():
-                sub = var_p[Self.SubNode]
-                parents.append((sub.name, sub.value, sub.grad))
-            elif var_p.isa[Self.MulNode]():
-                mul = var_p[Self.MulNode]
-                parents.append((mul.name, mul.value, mul.grad))
-            elif var_p.isa[Self.PowNode]():
-                pow = var_p[Self.PowNode]
-                parents.append((pow.name, pow.value, pow.grad))
-            elif var_p.isa[Self.TanhNode]():
-                tanh = var_p[Self.TanhNode]
-                parents.append((tanh.name, tanh.value, tanh.grad))
-            else:
-                leaf = var_p[Self.LeafNode]
-                parents.append((leaf.name, leaf.value, leaf.grad))
-        return parents^
+    fn get_parent[i: Int](self) -> Optional[Self.AnyNode]:
+        constrained[i in (0, 1), "The index i must be 0 or 1"]()
+
+        @parameter
+        if i == 0:
+            return self.parent1
+        else:
+            return self.parent2
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
