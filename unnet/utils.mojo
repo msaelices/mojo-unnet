@@ -8,18 +8,7 @@ from python import Python, PythonObject
 
 fn get_node_id(node: Node) -> String:
     """Get a unique string identifier for any node variant."""
-    if node.op == Op.NONE:
-        return String("leaf_", node.name, "_", node.value)
-    elif node.op == Op.ADD:
-        return String("add_", node.name, "_", node.value)
-    elif node.op == Op.SUB:
-        return String("sub_", node.name, "_", node.value)
-    elif node.op == Op.MUL:
-        return String("mul_", node.name, "_", node.value)
-    elif node.op == Op.POW:
-        return String("pow_", node.name, "_", node.value)
-    else:  # Tanh
-        return String("tanh_", node.name, "_", node.value)
+    return String(node.uuid)
 
 
 fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
@@ -77,7 +66,7 @@ fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
     return nodes^, edges^
 
 
-fn draw(graph: Node) raises -> PythonObject:
+fn draw(var graph: Node) raises -> PythonObject:
     """Create a graphviz visualization of the computation graph.
 
     Args:
@@ -93,7 +82,7 @@ fn draw(graph: Node) raises -> PythonObject:
     var node_map = Dict[String, Tuple[String, Float64, Float64, String]]()
     var visited = List[Node]()
     var stack = List[Node]()
-    stack.append(graph)
+    stack.append(graph^)
 
     while len(stack) > 0:
         var current = stack.pop()
@@ -102,7 +91,6 @@ fn draw(graph: Node) raises -> PythonObject:
         if current in visited:
             continue
 
-        visited.append(current)
         var node_data = get_node_data(current)
         var name = node_data[0]
         var value = node_data[1]
@@ -139,5 +127,7 @@ fn draw(graph: Node) raises -> PythonObject:
             else:
                 plot.edge(parent2_id, node_id)
             stack.append(parent2_node)
+
+        visited.append(current^)
 
     return plot

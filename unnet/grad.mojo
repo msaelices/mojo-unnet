@@ -1,7 +1,9 @@
 """Computational graph and automatic differentiation."""
 
+# from builtin._location import __call_location
 import math
 from memory import UnsafePointerV2
+from unnet.uuid import generate_uuid, UUID
 
 
 struct Op(EqualityComparable, Stringable, ImplicitlyCopyable & Movable):
@@ -41,6 +43,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
+    var uuid: UUID
     var value: Float64
     var op: Op
     var grad: Float64
@@ -51,9 +54,10 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     fn __init__(
         out self,
         value: Float64,
-        name: String,
+        name: String = "N/A",
     ):
         """Initialize a node with a value and optional name."""
+        self.uuid = generate_uuid()
         self.value = value
         self.name = name
         self.grad = 0.0
@@ -65,10 +69,11 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         out self,
         value: Float64,
         op: Op,
-        mut parent: Node,
+        var parent: Node,
         name: String = "N/A",
     ):
         """Initialize a node with a value and optional name."""
+        self.uuid = generate_uuid()
         self.value = value
         self.op = op
         self.name = name
@@ -80,73 +85,84 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         out self,
         value: Float64,
         op: Op,
-        mut parent1: Node,
-        mut parent2: Node,
+        var parent1: Node,
+        var parent2: Node,
         name: String = "N/A",
     ):
         """Initialize a node with a value and optional name."""
+        self.uuid = generate_uuid()
         self.value = value
         self.op = op
         self.name = name
         self.parent1_ptr = UnsafePointerV2(to=parent1)
-        self.parent2_ptr = UnsafePointerV2(to=parent1)
+        self.parent2_ptr = UnsafePointerV2(to=parent2)
         self.grad = 0.0
 
+    @always_inline
     fn __copyinit__(out self, other: Self):
         """Copy initializer for Node."""
+        self.uuid = other.uuid
         self.value = other.value
         self.op = other.op
         self.grad = other.grad
         self.name = other.name
         self.parent1_ptr = other.parent1_ptr
         self.parent2_ptr = other.parent2_ptr
+        # var call_location = __call_location()
+        # print("Copying Node:", self.uuid, self.name, "in ", call_location)
 
     fn __eq__(self, other: Self) -> Bool:
-        # TODO: Consider comparing parents as well
-        return self.value == other.value and self.name == other.name
+        return self.uuid == other.uuid
 
-    fn __add__(mut self, mut other: Node) -> Node:
+    # @always_inline
+    # fn __del__(deinit self):
+    #     """Destructor for Node."""
+    #     # No special cleanup needed as UnsafePointerV2 does not own the memory
+    #     var call_location = __call_location()
+    #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
+
+    fn __add__(var self, var other: Node) -> Node:
         """Add two nodes."""
         return Node(
             op=Op.ADD,
             value=self.value + other.value,
-            parent1=self,
-            parent2=other,
+            parent1=self^,
+            parent2=other^,
         )
 
-    fn __sub__(mut self, mut other: Node) -> Node:
+    fn __sub__(var self, var other: Node) -> Node:
         """Subtract two nodes."""
         return Node(
             op=Op.SUB,
             value=self.value - other.value,
-            parent1=self,
-            parent2=other,
+            parent1=self^,
+            parent2=other^,
         )
 
-    fn __mul__(mut self, mut other: Node) -> Node:
+    fn __mul__(var self, var other: Node) -> Node:
         """Multiply two nodes."""
         return Node(
             value=self.value * other.value,
             op=Op.MUL,
-            parent1=self,
-            parent2=other,
+            parent1=self^,
+            parent2=other^,
         )
 
-    fn __pow__(mut self, exponent: Float64) -> Node:
+    fn __pow__(var self, exponent: Float64) -> Node:
         """Raise node to a power."""
         return Node(
             value=self.value**exponent,
             op=Op.POW,
-            parent=self,
+            parent=self^,
         )
 
-    fn tanh(mut self) -> Node:
+    fn tanh(var self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result = math.tanh(self.value)
         return Node(
             value=result,
             op=Op.TANH,
-            parent=self,
+            parent=self^,
         )
 
     fn backward(mut self):
@@ -159,9 +175,15 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
 
         @parameter
         if i == 0:
-            return self.parent1_ptr[]
+            if self.parent1_ptr:
+                return self.parent1_ptr[]
+            else:
+                return None
         else:
-            return self.parent2_ptr[]
+            if self.parent2_ptr:
+                return self.parent2_ptr[]
+            else:
+                return None
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
