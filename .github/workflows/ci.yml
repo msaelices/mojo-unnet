@@ -12,13 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Install pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          enable-cache: true
+          activate-environment: true
 
       - name: Run pre-commit checks
-        run: uvx pre-commit run --all-files
+        run: pixi run pre-commit run --all-files
 
   build:
     runs-on: ubuntu-latest
@@ -35,22 +35,22 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/modular/
-          key: modular-${{ hashFiles('uv.lock') }}
+          key: modular-${{ hashFiles('pixi.lock') }}
           restore-keys: |
             modular-
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Install pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          enable-cache: true
+          activate-environment: true
 
       - name: Install dependencies
-        run: uv sync --all-groups
+        run: pixi install
 
       - name: Format Mojo files
-        run: uv run mojo format --check mojo_unnet/
+        run: pixi run mojo format unnet/
 
       - name: Build Mojo package
         env:
           MODULAR_HOME: /tmp/modular/
-        run: uv run mojo package mojo_unnet -o build/mojo_unnet.mojopkg
+        run: pixi run mojo package unnet -o build/unnet.mojopkg
