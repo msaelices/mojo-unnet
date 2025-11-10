@@ -102,7 +102,7 @@ uv run pre-commit run --all-files
 
 ```bash
 # Build Mojo package
-uv run mojo package unnet -o build/unnet.mojopkg
+uv run mojo package unnet -o unnet.mojopkg
 ```
 
 

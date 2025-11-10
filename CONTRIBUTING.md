@@ -38,7 +38,7 @@ uv run mojo format --check unnet/
 
 Build the Mojo package:
 ```bash
-uv run mojo package unnet -o build/unnet.mojopkg
+uv run mojo package unnet -o unnet.mojopkg
 ```
 
 ## Pre-commit Hooks

@@ -53,4 +53,4 @@ jobs:
       - name: Build Mojo package
         env:
           MODULAR_HOME: /tmp/modular/
-        run: pixi run mojo package unnet -o build/unnet.mojopkg
+        run: pixi run mojo package unnet -o unnet.mojopkg
