@@ -69,24 +69,8 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         out self,
         value: Float64,
         op: Op,
-        var parent: Node,
-        name: String = "N/A",
-    ):
-        """Initialize a node with a value and optional name."""
-        self.uuid = generate_uuid()
-        self.value = value
-        self.op = op
-        self.name = name
-        self.parent1_ptr = UnsafePointerV2(to=parent)
-        self.parent2_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
-        self.grad = 0.0
-
-    fn __init__(
-        out self,
-        value: Float64,
-        op: Op,
         var parent1: Node,
-        var parent2: Node,
+        var parent2: Optional[Node] = None,
         name: String = "N/A",
     ):
         """Initialize a node with a value and optional name."""
@@ -95,7 +79,10 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         self.op = op
         self.name = name
         self.parent1_ptr = UnsafePointerV2(to=parent1)
-        self.parent2_ptr = UnsafePointerV2(to=parent2)
+        if parent2:
+            self.parent2_ptr = UnsafePointerV2(to=parent2.value())
+        else:
+            self.parent2_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
         self.grad = 0.0
 
     @always_inline
@@ -153,7 +140,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         return Node(
             value=self.value**exponent,
             op=Op.POW,
-            parent=self^,
+            parent1=self^,
         )
 
     fn tanh(var self) -> Node:
@@ -162,7 +149,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         return Node(
             value=result,
             op=Op.TANH,
-            parent=self^,
+            parent1=self^,
         )
 
     fn backward(mut self):
