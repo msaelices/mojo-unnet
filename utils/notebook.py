@@ -11,81 +11,202 @@
 # limitations under the License.
 # ===----------------------------------------------------------------------=== #
 
+import argparse
+import importlib
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 try:
     # Don't require including IPython as a dependency
+
     from IPython.core.magic import register_cell_magic  # type: ignore
-    from IPython.display import display
+    from IPython.display import SVG, display
 except ImportError:
-    display = None
+    SVG, display = None, None
 
     def register_cell_magic(fn):  # noqa: ANN001, ANN201
         return fn
 
 
+import mojo.importer
+
 from .paths import MojoCompilationError
 from .run import subprocess_run_mojo
+
+# Template for creating a Mojo module with Python bindings that can return any object
+ENTRYPOINT_TEMPLATE = """\
+from python import PythonObject
+from python.bindings import PythonModuleBuilder
+from os import abort
+
+# --- User code:
+{USER_CODE}
+
+# --- Python module binding:
+@export
+fn PyInit_{MODNAME}() -> PythonObject:
+    try:
+        var m = PythonModuleBuilder("{MODNAME}")
+        # Register the entrypoint function that should exist in user code:
+        m.def_function[{ENTRYPOINT}]("{ENTRYPOINT}", docstring="Execute cell entry and return a PythonObject")
+        return m.finalize()
+    except e:
+        return abort[PythonObject](String("error creating Python Mojo module:", e))
+"""
 
 
 @register_cell_magic
 def mojo(line, cell) -> None:  # noqa: ANN001
-    """Execute Mojo code in a Jupyter notebook cell.
-
-    Behaves like a normal Python cell - executes the Mojo code and captures
-    output. Mojo's main() function must return None, so use print() for output
-    or call Python functions directly.
+    """A Mojo cell.
 
     Usage:
-        ```mojo
-        %%mojo
-        fn main():
-            print("Hello from Mojo!")
-        ```
+        - Run Mojo code in a cell look for main() function:
 
-        ```mojo
-        %%mojo
-        from python import Python
+            ```mojo
+            %%mojo
+            def main():
+                print("Hello from Mojo!")
+            ```
 
-        fn main():
-            let json = Python.import_module("json")
-            let data = Dict[String, String]()
-            data["key"] = "value"
-            print(json.dumps(data))
-        ```
+        - Run Mojo code in a cell with some entrypoint function:
+
+            ```mojo
+            %%mojo draw
+            from python import Python, PythonObject
+
+            # draw function is the entrypoint
+            fn draw() raises -> PythonObject:
+                Digraph = Python.import_module("graphviz").Digraph
+
+                g = Digraph()
+                g.node('A')
+                g.node('B')
+
+                return g
+            ```
+
+        - Compile a python extension SO file:
+
+            ```mojo
+            %%mojo build --emit shared-lib -o mojo_module.so
+
+            from python import PythonObject
+            from python.bindings import PythonModuleBuilder
+            from os import abort
+
+            @export
+            fn PyInit_mojo_module() -> PythonObject:
+                try:
+                    var m = PythonModuleBuilder("thing")
+                    m.def_function[hello]("hello", docstring="Hello!")
+                    return m.finalize()
+                except e:
+                    return abort[PythonObject](String("error creating Python Mojo module:", e))
+
+            def hello() -> PythonObject:
+                return "Hello from Mojo!"
+            ```
+
+            then in another cell
+
+            ```python
+            from mojo_module import hello
+
+            hello()
+            ```
+
+        - Compile a package for kernel development.
+            The following produces a `kernels.mojopkg` which may be included
+            as custom ops in a graph via the `custom_extensions` mechanism.
+
+            ```mojo
+            %%mojo package -o kernels.mojopkg
+
+            from runtime.asyncrt import DeviceContextPtr
+            from tensor import InputTensor, ManagedTensorSlice, OutputTensor
+
+            @compiler.register("histogram")
+            struct Histogram:
+                @staticmethod
+                fn execute[
+                    target: StaticString
+                ](
+                    output: OutputTensor[dtype = DType.int64, rank=1],
+                    input: InputTensor[dtype = DType.uint8, rank=1],
+                    ctx: DeviceContextPtr,
+                ) raises:
+                    ...
+            ```
+
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", nargs="?", default="run")
+
+    args, extra_args = parser.parse_known_args(line.strip().split())
+
+    # Check if entrypoint mode is requested
+    is_entrypoint = args.command not in ["run", "build", "package"]
+
     with tempfile.TemporaryDirectory() as tempdir:
         path = Path(tempdir)
-        mojo_path = path / "cell.mojo"
 
-        # Write the Mojo code to a temporary file
-        with open(mojo_path, "w") as f:
-            f.write(cell)
+        if is_entrypoint:
+            entrypoint = args.command
+            modname = f"mojocell_{uuid.uuid4().hex[:8]}"
 
-        # Create an __init__.mojo file for proper module structure
-        (path / "__init__.mojo").touch()
+            mojo_content = ENTRYPOINT_TEMPLATE.format(
+                USER_CODE=cell,
+                MODNAME=modname,
+                ENTRYPOINT=entrypoint,
+            )
+            mojo_path = path / f"{modname}.mojo"
+            with open(mojo_path, "w") as f:
+                f.write(mojo_content)
 
-        # Execute the Mojo code
-        command = ["run", str(mojo_path)]
-        result = subprocess_run_mojo(command, capture_output=True)
+            # Add the temp directory to Python path for import
+            sys.path.insert(0, str(path))
 
-        if not result.returncode:
-            # Display stdout from Mojo execution
-            stdout = result.stdout.decode()
-            if stdout.strip():
-                print(stdout, end="")
+            try:
+                mod = importlib.import_module(modname)
 
-            # For PythonObject display, we rely on the Mojo code to use
-            # Python interop appropriately. The execution captures stdout
-            # which is the primary output mechanism for now.
-            # Future enhancement could capture return values from main().
+                # Call entrypoint function and display result
+                result = getattr(mod, entrypoint)()
+
+                # Use IPython display for rich rendering
+                if display:
+                    display(result)
+                else:
+                    print(result)
+
+            finally:
+                # Clean up path
+                if str(path) in sys.path:
+                    sys.path.remove(str(path))
 
         else:
-            raise MojoCompilationError(
-                mojo_path,
-                command,
-                result.stdout.decode(),
-                result.stderr.decode(),
-            )
+            mojo_path = path / "cell.mojo"
+            with open(mojo_path, "w") as f:
+                f.write(cell)
+            (path / "__init__.mojo").touch()
+
+            input_path = path if args.command == "package" else mojo_path
+            command = [
+                args.command,
+                str(input_path),
+                *extra_args,
+            ]
+
+            result = subprocess_run_mojo(command, capture_output=True)
+
+            if not result.returncode:
+                stdout = result.stdout.decode()
+                print(stdout)
+            else:
+                raise MojoCompilationError(
+                    input_path,
+                    command,
+                    result.stdout.decode(),
+                    result.stderr.decode(),
+                )
