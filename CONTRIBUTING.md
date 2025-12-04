@@ -15,10 +15,10 @@ Follow the instructions at https://docs.modular.com/mojo/
 
 3. Install development dependencies:
 ```bash
-uv sync --all-groups
+pixi install
 ```
 
-This will install development tools (mblack formatter, mojo-compiler).
+This will install development tools including pre-commit hooks.
 
 ## Code Quality
 
@@ -26,19 +26,19 @@ This will install development tools (mblack formatter, mojo-compiler).
 
 Format Mojo files:
 ```bash
-uv run mojo format unnet/
+pixi run mojo format unnet/
 ```
 
 Check formatting without modifying files:
 ```bash
-uv run mojo format --check unnet/
+pixi run mojo format --check unnet/
 ```
 
 ### Building
 
 Build the Mojo package:
 ```bash
-uv run mojo package unnet -o unnet.mojopkg
+pixi run mojo package unnet -o unnet.mojopkg
 ```
 
 ## Pre-commit Hooks
@@ -47,22 +47,25 @@ We use pre-commit hooks to automatically check code quality before commits.
 
 ### Install pre-commit hooks:
 ```bash
-uv run pre-commit install
+pixi run pre-commit install
 ```
 
 ### Run pre-commit on all files manually:
 ```bash
-uv run pre-commit run --all-files
+pixi run pre-commit run --all-files
 ```
 The pre-commit hooks will automatically run on every commit and check:
-- UV lock file sync
+- Pixi lock file sync
 - Mojo formatting
 
 ### Running Tests
 
 ```bash
-# Run one test file
-uv run mojo tests/test_utils.mojo
+# Run tests using pixi task
+pixi run test
+
+# Or run a specific test file directly
+pixi run mojo tests/test_utils.mojo
 ```
 
 ## Continuous Integration
