@@ -61,7 +61,7 @@ struct MersenneTwister:
 
 
 @register_passable("trivial")
-struct UUID(Copyable, EqualityComparable, Movable, Stringable, Writable):
+struct UUID(Copyable, Equatable, Movable, Stringable, Writable):
     var bytes: StaticTuple[UInt8, 16]
 
     fn __init__(out self):

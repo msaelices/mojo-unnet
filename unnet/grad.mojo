@@ -6,7 +6,7 @@ from memory import UnsafePointer
 from unnet.uuid import generate_uuid, UUID
 
 
-struct Op(EqualityComparable, Stringable, ImplicitlyCopyable & Movable):
+struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
     alias NONE: Int = 0
     alias ADD: Int = 1
     alias SUB: Int = 2
@@ -39,7 +39,7 @@ struct Op(EqualityComparable, Stringable, ImplicitlyCopyable & Movable):
         return "UnknownOp"
 
 
-struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
+struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
