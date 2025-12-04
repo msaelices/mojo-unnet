@@ -2,7 +2,7 @@
 
 # from builtin._location import __call_location
 import math
-from memory import UnsafePointerV2
+from memory import UnsafePointer
 from unnet.uuid import generate_uuid, UUID
 
 
@@ -48,8 +48,8 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     var op: Op
     var grad: Float64
     var name: String
-    var parent1_ptr: UnsafePointerV2[Node, origin=MutAnyOrigin]
-    var parent2_ptr: UnsafePointerV2[Node, origin=MutAnyOrigin]
+    var parent1_ptr: UnsafePointer[Node, origin=MutAnyOrigin]
+    var parent2_ptr: UnsafePointer[Node, origin=MutAnyOrigin]
 
     fn __init__(
         out self,
@@ -62,8 +62,8 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         self.name = name
         self.grad = 0.0
         self.op = Op.NONE
-        self.parent1_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
-        self.parent2_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
+        self.parent1_ptr = UnsafePointer[Node, origin=MutAnyOrigin]()
+        self.parent2_ptr = UnsafePointer[Node, origin=MutAnyOrigin]()
 
     fn __init__(
         out self,
@@ -78,11 +78,11 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
         self.value = value
         self.op = op
         self.name = name
-        self.parent1_ptr = UnsafePointerV2(to=parent1)
+        self.parent1_ptr = UnsafePointer(to=parent1)
         if parent2:
-            self.parent2_ptr = UnsafePointerV2(to=parent2.value())
+            self.parent2_ptr = UnsafePointer(to=parent2.value())
         else:
-            self.parent2_ptr = UnsafePointerV2[Node, origin=MutAnyOrigin]()
+            self.parent2_ptr = UnsafePointer[Node, origin=MutAnyOrigin]()
         self.grad = 0.0
 
     @always_inline
@@ -104,7 +104,7 @@ struct Node(ImplicitlyCopyable & Movable, EqualityComparable, Writable):
     # @always_inline
     # fn __del__(deinit self):
     #     """Destructor for Node."""
-    #     # No special cleanup needed as UnsafePointerV2 does not own the memory
+    #     # No special cleanup needed as UnsafePointer does not own the memory
     #     var call_location = __call_location()
     #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
 
