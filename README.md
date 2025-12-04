@@ -36,7 +36,7 @@ This project provides scaffolding with empty implementations. The following comp
 ### Prerequisites
 
 - [Mojo](https://docs.modular.com/mojo/)
-- [uv](https://github.com/astral-sh/uv) package manager (for dev tools)
+- [pixi](https://github.com/prefix-dev/pixi) package manager (for dev tools)
 
 ### Setup
 
@@ -45,8 +45,8 @@ This project provides scaffolding with empty implementations. The following comp
 git clone https://github.com/yourusername/mojo-unnet.git
 cd mojo-unnet
 
-# Install development dependencies (mblack, mojo-compiler)
-uv sync --all-groups
+# Install development dependencies (pre-commit, mojo tools)
+pixi install
 ```
 
 ## Usage
@@ -79,30 +79,30 @@ mojo-unnet/
 
 ```bash
 # Install all dependencies including dev tools
-uv sync --all-groups
+pixi install
 
 # Install pre-commit hooks
-uv run pre-commit install
+pixi run pre-commit install
 ```
 
 ### Code Quality
 
 ```bash
 # Format Mojo files
-uv run mojo format unnet/
+pixi run mojo format unnet/
 
 # Check formatting
-uv run mojo format --check unnet/
+pixi run mojo format --check unnet/
 
 # Run all pre-commit checks
-uv run pre-commit run --all-files
+pixi run pre-commit run --all-files
 ```
 
 ### Building
 
 ```bash
 # Build Mojo package
-uv run mojo package unnet -o unnet.mojopkg
+pixi run mojo package unnet -o unnet.mojopkg
 ```
 
 
