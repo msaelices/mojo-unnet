@@ -53,7 +53,7 @@ fn PyInit_{MODNAME}() -> PythonObject:
         m.def_function[{ENTRYPOINT}]("{ENTRYPOINT}", docstring="Execute cell entry and return a PythonObject")
         return m.finalize()
     except e:
-        return abort[PythonObject](String("error creating Python Mojo module:", e))
+        abort(String("error creating Python Mojo module:", e))
 """
 
 
