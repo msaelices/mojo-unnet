@@ -48,6 +48,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     var op: Op
     var grad: Float64
     var name: String
+    # We cannot use Optional[Node] due to recursive type definition issues.
+    # Current compiler error: struct has recursive reference to itself
     var parent1_ptr: UnsafePointer[Node, origin=MutAnyOrigin]
     var parent2_ptr: UnsafePointer[Node, origin=MutAnyOrigin]
 
