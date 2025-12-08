@@ -66,7 +66,9 @@ fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
     return nodes^, edges^
 
 
-fn calculate_gradients(op: Op, result: Node, mut node: Node, mut other: Optional[Node]) -> None:
+fn calculate_gradients(
+    op: Op, result: Node, mut node: Node, mut other: Optional[Node]
+) -> None:
     """Calculate gradients for a node based on its operation.
 
     Args:
@@ -87,7 +89,11 @@ fn calculate_gradients(op: Op, result: Node, mut node: Node, mut other: Optional
         node.grad += other.value().value * result.grad
         other.value().grad += node.value * result.grad
     elif op == Op.POW and other:
-        node.grad += other.value().value * node.value ** (other.value().value - 1) * result.grad
+        node.grad += (
+            other.value().value
+            * node.value ** (other.value().value - 1)
+            * result.grad
+        )
     elif op == Op.TANH:
         node.grad += (1 - result.value**2) * result.grad
 

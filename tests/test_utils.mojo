@@ -238,11 +238,14 @@ def test_calculate_gradients_tanh_nonzero():
     # node.grad += (1 - result.value^2) * result.grad
     # node.grad += (1 - 0.7616^2) * 3.0 = (1 - 0.58003456) * 3.0 ≈ 0.42 * 3.0 ≈ 1.26
     var expected_grad = (1.0 - result.value**2) * result.grad
-    assert_true(node.grad > expected_grad - 0.01 and node.grad < expected_grad + 0.01)
+    assert_true(
+        node.grad > expected_grad - 0.01 and node.grad < expected_grad + 0.01
+    )
 
 
 def test_calculate_gradients_accumulation():
-    """Test that calculate_gradients accumulates gradients within a single call."""
+    """Test that calculate_gradients accumulates gradients within a single call.
+    """
     var node = Node(2.0, "x")
     node.grad = 1.0
     var other_node = Node(3.0, "y")
