@@ -66,37 +66,6 @@ fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
     return nodes^, edges^
 
 
-fn calculate_gradients(
-    op: Op, result: Node, mut node: Node, mut other: Optional[Node]
-) -> None:
-    """Calculate gradients for a node based on its operation.
-
-    Args:
-        op: The operation type of the node.
-        result: The result node from the operation.
-        node: The current node to update gradients for.
-        other: The other node involved in the operation, if any.
-    """
-    if op == Op.NONE:
-        return
-    elif op == Op.ADD and other:
-        node.grad += result.grad
-        other.value().grad += result.grad
-    elif op == Op.SUB and other:
-        node.grad -= result.grad
-        other.value().grad -= result.grad
-    elif op == Op.MUL and other:
-        node.grad += other.value().value * result.grad
-        other.value().grad += node.value * result.grad
-    elif op == Op.POW and other:
-        node.grad += (
-            other.value().value
-            * node.value ** (other.value().value - 1)
-            * result.grad
-        )
-    elif op == Op.TANH:
-        node.grad += (1 - result.value**2) * result.grad
-
 
 fn draw(var graph: Node) raises -> PythonObject:
     """Create a graphviz visualization of the computation graph.
