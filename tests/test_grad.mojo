@@ -1,7 +1,5 @@
 from testing import (
     assert_equal,
-    assert_false,
-    assert_raises,
     assert_true,
     TestSuite,
 )
