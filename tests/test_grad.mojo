@@ -5,6 +5,7 @@ from testing import (
 )
 
 from unnet.grad import Node, Op, calculate_gradients
+from memory import UnsafePointer
 
 
 def test_calculate_gradients_none():
@@ -12,7 +13,7 @@ def test_calculate_gradients_none():
     var node = Node(3.0, "x")
     var result = Node(5.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](None)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin]()
 
     calculate_gradients(Op.NONE, result, node, other)
 
@@ -25,12 +26,12 @@ def test_calculate_gradients_add():
     var other_node = Node(5.0, "y")
     var result = Node(8.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](other_node)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
 
     calculate_gradients(Op.ADD, result, node, other)
 
     assert_equal(node.grad, 2.0)
-    assert_equal(other.value().grad, 2.0)
+    assert_equal(other[].grad, 2.0)
 
 
 def test_calculate_gradients_sub():
@@ -39,12 +40,12 @@ def test_calculate_gradients_sub():
     var other_node = Node(3.0, "y")
     var result = Node(2.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](other_node)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
 
     calculate_gradients(Op.SUB, result, node, other)
 
     assert_equal(node.grad, -2.0)
-    assert_equal(other.value().grad, -2.0)
+    assert_equal(other[].grad, -2.0)
 
 
 def test_calculate_gradients_mul():
@@ -53,7 +54,7 @@ def test_calculate_gradients_mul():
     var other_node = Node(5.0, "y")
     var result = Node(15.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](other_node)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
 
     calculate_gradients(Op.MUL, result, node, other)
 
@@ -61,7 +62,7 @@ def test_calculate_gradients_mul():
     # node.grad += other.value * result.grad = 5.0 * 2.0 = 10.0
     # other.grad += node.value * result.grad = 3.0 * 2.0 = 6.0
     assert_equal(node.grad, 10.0)
-    assert_equal(other.value().grad, 6.0)
+    assert_equal(other[].grad, 6.0)
 
 
 def test_calculate_gradients_pow():
@@ -70,7 +71,7 @@ def test_calculate_gradients_pow():
     var exponent_node = Node(2.0, "exp")
     var result = Node(9.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](exponent_node)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin](to=exponent_node)
 
     calculate_gradients(Op.POW, result, node, other)
 
@@ -84,7 +85,7 @@ def test_calculate_gradients_tanh():
     var node = Node(0.0, "x")
     var result = Node(0.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](None)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin]()
 
     calculate_gradients(Op.TANH, result, node, other)
 
@@ -99,7 +100,7 @@ def test_calculate_gradients_tanh_nonzero():
     var node = Node(1.0, "x")
     var result = Node(0.7616, "result")
     result.grad = 3.0
-    var other = Optional[Node](None)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin]()
 
     calculate_gradients(Op.TANH, result, node, other)
 
@@ -121,7 +122,7 @@ def test_calculate_gradients_accumulation():
     other_node.grad = 0.5
     var result = Node(6.0, "result")
     result.grad = 2.0
-    var other = Optional[Node](other_node)
+    var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
 
     calculate_gradients(Op.MUL, result, node, other)
 
@@ -129,7 +130,7 @@ def test_calculate_gradients_accumulation():
     # node.grad = 1.0 + (other.value * result.grad) = 1.0 + (3.0 * 2.0) = 1.0 + 6.0 = 7.0
     # other.grad = 0.5 + (node.value * result.grad) = 0.5 + (2.0 * 2.0) = 0.5 + 4.0 = 4.5
     assert_equal(node.grad, 7.0)
-    assert_equal(other.value().grad, 4.5)
+    assert_equal(other[].grad, 4.5)
 
 
 def main():

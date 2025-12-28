@@ -182,7 +182,10 @@ alias Edge = Tuple[Node, Node]
 
 
 fn calculate_gradients(
-    op: Op, result: Node, mut node: Node, mut other: Optional[Node]
+    op: Op,
+    mut result: Node,
+    mut node: Node,
+    other: UnsafePointer[Node, origin=MutAnyOrigin],
 ) -> None:
     """Calculate gradients for a node based on its operation.
 
@@ -196,19 +199,16 @@ fn calculate_gradients(
         return
     elif op == Op.ADD and other:
         node.grad += result.grad
-        other.value().grad += result.grad
+        other[].grad += result.grad
     elif op == Op.SUB and other:
         node.grad -= result.grad
-        other.value().grad -= result.grad
+        other[].grad -= result.grad
     elif op == Op.MUL and other:
-        node.grad += other.value().value * result.grad
-        other.value().grad += node.value * result.grad
+        node.grad += other[].value * result.grad
+        other[].grad += node.value * result.grad
     elif op == Op.POW and other:
         node.grad += (
-            other.value().value
-            * node.value ** (other.value().value - 1)
-            * result.grad
+            other[].value * node.value ** (other[].value - 1) * result.grad
         )
     elif op == Op.TANH:
         node.grad += (1 - result.value**2) * result.grad
-
