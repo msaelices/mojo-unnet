@@ -185,7 +185,7 @@ fn calculate_gradients(
     op: Op,
     mut result: Node,
     mut node: Node,
-    other: UnsafePointer[Node, origin=MutAnyOrigin],
+    other_ptr: UnsafePointer[Node, origin=MutAnyOrigin],
 ) -> None:
     """Calculate gradients for a node based on its operation.
 
@@ -193,22 +193,24 @@ fn calculate_gradients(
         op: The operation type of the node.
         result: The result node from the operation.
         node: The current node to update gradients for.
-        other: The other node involved in the operation, if any.
+        other_ptr: The other node involved in the operation, if any.
     """
     if op == Op.NONE:
         return
-    elif op == Op.ADD and other:
+    elif op == Op.ADD and other_ptr:
         node.grad += result.grad
-        other[].grad += result.grad
-    elif op == Op.SUB and other:
+        other_ptr[].grad += result.grad
+    elif op == Op.SUB and other_ptr:
         node.grad -= result.grad
-        other[].grad -= result.grad
-    elif op == Op.MUL and other:
-        node.grad += other[].value * result.grad
-        other[].grad += node.value * result.grad
-    elif op == Op.POW and other:
+        other_ptr[].grad -= result.grad
+    elif op == Op.MUL and other_ptr:
+        node.grad += other_ptr[].value * result.grad
+        other_ptr[].grad += node.value * result.grad
+    elif op == Op.POW and other_ptr:
         node.grad += (
-            other[].value * node.value ** (other[].value - 1) * result.grad
+            other_ptr[].value
+            * node.value ** (other_ptr[].value - 1)
+            * result.grad
         )
     elif op == Op.TANH:
         node.grad += (1 - result.value**2) * result.grad
