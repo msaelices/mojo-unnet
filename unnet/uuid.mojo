@@ -10,21 +10,21 @@ struct MersenneTwister:
     Pseudo-random generator Mersenne Twister (MT19937-32bit).
     """
 
-    alias N: Int = 624
-    alias M: Int = 397
-    alias MATRIX_A: Int32 = 0x9908B0DF
-    alias UPPER_MASK: Int32 = 0x80000000
-    alias LOWER_MASK: Int32 = 0x7FFFFFFF
-    alias TEMPERING_MASK_B: Int32 = 0x9D2C5680
-    alias TEMPERING_MASK_C: Int32 = 0xEFC60000
+    comptime N: Int = 624
+    comptime M: Int = 397
+    comptime MATRIX_A: Int32 = 0x9908B0DF
+    comptime UPPER_MASK: Int32 = 0x80000000
+    comptime LOWER_MASK: Int32 = 0x7FFFFFFF
+    comptime TEMPERING_MASK_B: Int32 = 0x9D2C5680
+    comptime TEMPERING_MASK_C: Int32 = 0xEFC60000
 
     var state: StaticTuple[Int32, Self.N]
     var index: Int
 
     fn __init__(out self, seed: Int):
-        alias W: Int = 32
-        alias F: Int32 = 1812433253
-        alias D: Int32 = 0xFFFFFFFF
+        comptime W: Int = 32
+        comptime F: Int32 = 1812433253
+        comptime D: Int32 = 0xFFFFFFFF
 
         self.index = Self.N
         self.state = StaticTuple[Int32, Self.N]()
@@ -85,7 +85,7 @@ struct UUID(Copyable, Equatable, Movable, Stringable, Writable):
 
     fn __str__(self) -> String:
         var result: String = ""
-        alias hex_digits: String = "0123456789abcdef"
+        comptime hex_digits: String = "0123456789abcdef"
 
         @parameter
         for i in range(16):

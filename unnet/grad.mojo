@@ -8,12 +8,12 @@ from unnet.uuid import generate_uuid, UUID
 
 
 struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
-    alias NONE: Int = 0
-    alias ADD: Int = 1
-    alias SUB: Int = 2
-    alias MUL: Int = 3
-    alias POW: Int = 4
-    alias TANH: Int = 5
+    comptime NONE: Int = 0
+    comptime ADD: Int = 1
+    comptime SUB: Int = 2
+    comptime MUL: Int = 3
+    comptime POW: Int = 4
+    comptime TANH: Int = 5
 
     var v: Int
 
@@ -81,9 +81,10 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.value = value
         self.op = op
         self.name = name
-        self.parent1_ptr = UnsafePointer[Node, origin_of(parent1)](to=parent1)
+        # Use MutAnyOrigin instead of origin_of(parent1) to avoid capturing parameter lifetime
+        self.parent1_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=parent1)
         if parent2:
-            self.parent2_ptr = UnsafePointer[Node, origin_of(parent2.value())](
+            self.parent2_ptr = UnsafePointer[Node, origin=MutAnyOrigin](
                 to=parent2.value()
             )
         else:
@@ -233,7 +234,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
 
 
-alias Edge = Tuple[Node, Node]
+comptime Edge = Tuple[Node, Node]
 
 
 fn calculate_gradients(
