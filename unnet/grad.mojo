@@ -3,6 +3,7 @@
 # from builtin._location import __call_location
 import math
 from memory import UnsafePointer
+from benchmark import keep
 from unnet.uuid import generate_uuid, UUID
 
 
@@ -80,9 +81,11 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.value = value
         self.op = op
         self.name = name
-        self.parent1_ptr = UnsafePointer(to=parent1)
+        self.parent1_ptr = UnsafePointer[Node, origin_of(parent1)](to=parent1)
         if parent2:
-            self.parent2_ptr = UnsafePointer(to=parent2.value())
+            self.parent2_ptr = UnsafePointer[Node, origin_of(parent2.value())](
+                to=parent2.value()
+            )
         else:
             self.parent2_ptr = UnsafePointer[Node, origin=MutAnyOrigin]()
         self.grad = 0.0
@@ -110,54 +113,106 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     #     var call_location = __call_location()
     #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
 
-    fn __add__(var self, var other: Node) -> Node:
+    fn __add__(self, var other: Node) -> Node:
         """Add two nodes."""
         return Node(
             op=Op.ADD,
             value=self.value + other.value,
-            parent1=self^,
+            parent1=self,
             parent2=other^,
         )
 
-    fn __sub__(var self, var other: Node) -> Node:
+    fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
         return Node(
             op=Op.SUB,
             value=self.value - other.value,
-            parent1=self^,
+            parent1=self,
             parent2=other^,
         )
 
-    fn __mul__(var self, var other: Node) -> Node:
+    fn __mul__(self, var other: Node) -> Node:
         """Multiply two nodes."""
         return Node(
             value=self.value * other.value,
             op=Op.MUL,
-            parent1=self^,
+            parent1=self,
             parent2=other^,
         )
 
-    fn __pow__(var self, exponent: Float64) -> Node:
+    fn __pow__(self, exponent: Float64) -> Node:
         """Raise node to a power."""
         return Node(
             value=self.value**exponent,
             op=Op.POW,
-            parent1=self^,
+            parent1=self,
         )
 
-    fn tanh(var self) -> Node:
+    fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result = math.tanh(self.value)
         return Node(
             value=result,
             op=Op.TANH,
-            parent1=self^,
+            parent1=self,
         )
 
     fn backward(mut self):
         """Compute gradients via backpropagation."""
         # TODO: Implement backward pass through computation graph
         self.grad = 1.0
+        print("DEBUG: ", self.parent1_ptr[].value)
+        print("DEBUG: ", self.parent2_ptr[].value)
+        var stack = List[UnsafePointer[Node, MutAnyOrigin]]()
+        var nodes = List[UnsafePointer[Node, MutAnyOrigin]]()
+        var visited = List[UnsafePointer[Node, MutAnyOrigin]]()
+
+        stack.append(
+            UnsafePointer[Node, MutAnyOrigin](to=self)
+        )  # Start from this node
+        print("Starting backpropagation from Node:", self.name)
+
+        while len(stack) > 0:
+            print("Stack size:", len(stack))
+            var current = stack.pop()
+            print("Popped Node:", current[].name)
+            print("New stack size:", len(stack))
+
+            # Skip if already visited
+            if current in visited:
+                continue
+
+            print("Visiting Node:", current[].name)
+
+            visited.append(current)
+            nodes.append(current)
+            print("Added Node to visited and nodes list:", current[].name)
+
+            # Process parents
+            var parent1_ptr, parent2_ptr = (
+                current[].parent1_ptr,
+                current[].parent2_ptr,
+            )
+            keep(parent1_ptr)
+            keep(parent2_ptr)
+            print("Parent1 Pointer:", parent1_ptr)
+            print("Parent2 Pointer:", parent2_ptr)
+            if parent1_ptr:
+                print("Adding parent1 to stack:", parent1_ptr[].name)
+                stack.append(parent1_ptr)
+            if parent2_ptr:
+                print("Adding parent2 to stack:", parent2_ptr[].name)
+                stack.append(parent2_ptr)
+        print("Backpropagation order (from output to inputs):")
+        for result_ptr in nodes:
+            print(
+                "Visiting Node:",
+                result_ptr[].name,
+                "Value:",
+                result_ptr[].value,
+            )
+            var node, other = result_ptr[].parent1_ptr, result_ptr[].parent2_ptr
+            # calculate_gradients(result_ptr[].op, result_ptr[], node[], other)
 
     fn get_parent[i: Int](self) -> Optional[Node]:
         constrained[i in (0, 1), "The index i must be 0 or 1"]()
