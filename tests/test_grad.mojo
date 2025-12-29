@@ -14,8 +14,10 @@ def test_calculate_gradients_none():
     var result = Node(5.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin]()
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.NONE, result, node, other)
+    calculate_gradients(Op.NONE, result_ptr, node_ptr, other)
 
     assert_equal(node.grad, 0.0)
 
@@ -27,8 +29,10 @@ def test_calculate_gradients_add():
     var result = Node(8.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.ADD, result, node, other)
+    calculate_gradients(Op.ADD, result_ptr, node_ptr, other)
 
     assert_equal(node.grad, 2.0)
     assert_equal(other[].grad, 2.0)
@@ -41,10 +45,15 @@ def test_calculate_gradients_sub():
     var result = Node(2.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.SUB, result, node, other)
+    calculate_gradients(Op.SUB, result_ptr, node_ptr, other)
 
-    assert_equal(node.grad, -2.0)
+    # For subtraction: d/da(a-b) = 1, d/db(a-b) = -1
+    # node.grad += result.grad = 2.0
+    # other.grad -= result.grad = -2.0
+    assert_equal(node.grad, 2.0)
     assert_equal(other[].grad, -2.0)
 
 
@@ -55,8 +64,10 @@ def test_calculate_gradients_mul():
     var result = Node(15.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.MUL, result, node, other)
+    calculate_gradients(Op.MUL, result_ptr, node_ptr, other)
 
     # For multiplication: d/dx(x*y) = y, d/dy(x*y) = x
     # node.grad += other.value * result.grad = 5.0 * 2.0 = 10.0
@@ -72,8 +83,10 @@ def test_calculate_gradients_pow():
     var result = Node(9.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin](to=exponent_node)
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.POW, result, node, other)
+    calculate_gradients(Op.POW, result_ptr, node_ptr, other)
 
     # For power: d/dx(x^n) = n * x^(n-1)
     # node.grad += n * x^(n-1) * result.grad = 2.0 * 3.0^1.0 * 2.0 = 2.0 * 3.0 * 2.0 = 12.0
@@ -86,8 +99,10 @@ def test_calculate_gradients_tanh():
     var result = Node(0.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin]()
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.TANH, result, node, other)
+    calculate_gradients(Op.TANH, result_ptr, node_ptr, other)
 
     # For tanh: d/dx(tanh(x)) = 1 - tanh(x)^2
     # At x=0, tanh(0)=0, so derivative is 1 - 0^2 = 1
@@ -101,8 +116,10 @@ def test_calculate_gradients_tanh_nonzero():
     var result = Node(0.7616, "result")
     result.grad = 3.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin]()
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.TANH, result, node, other)
+    calculate_gradients(Op.TANH, result_ptr, node_ptr, other)
 
     # For tanh: d/dx(tanh(x)) = 1 - tanh(x)^2
     # node.grad += (1 - result.value^2) * result.grad
@@ -123,8 +140,10 @@ def test_calculate_gradients_accumulation():
     var result = Node(6.0, "result")
     result.grad = 2.0
     var other = UnsafePointer[Node, origin=MutAnyOrigin](to=other_node)
+    var result_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=result)
+    var node_ptr = UnsafePointer[Node, origin=MutAnyOrigin](to=node)
 
-    calculate_gradients(Op.MUL, result, node, other)
+    calculate_gradients(Op.MUL, result_ptr, node_ptr, other)
 
     # Gradients should accumulate on top of existing values
     # node.grad = 1.0 + (other.value * result.grad) = 1.0 + (3.0 * 2.0) = 1.0 + 6.0 = 7.0
