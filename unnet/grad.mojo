@@ -5,6 +5,7 @@ import math
 from memory import UnsafePointer
 from benchmark import keep
 from unnet.uuid import generate_uuid, UUID
+from unnet.registry import register_node
 
 
 struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
@@ -59,7 +60,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         out self,
         value: Float64,
         name: String = "N/A",
-    ):
+    ) raises:
         """Initialize a node with a value and optional name."""
         self.uuid = generate_uuid()
         self.value = value
@@ -70,6 +71,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.parent2_uuid = UUID()
         self.has_parent1 = False
         self.has_parent2 = False
+        # Auto-register in global registry
+        register_node(self)
 
     fn __init__(
         out self,
@@ -78,7 +81,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         var parent1: Node,
         var parent2: Optional[Node] = None,
         name: String = "N/A",
-    ):
+    ) raises:
         """Initialize a node with a value and optional name."""
         self.uuid = generate_uuid()
         self.value = value
@@ -94,6 +97,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             self.parent2_uuid = UUID()
             self.has_parent2 = False
         self.grad = 0.0
+        # Auto-register in global registry
+        register_node(self)
 
     @always_inline
     fn __copyinit__(out self, other: Self):
@@ -118,7 +123,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     #     var call_location = __call_location()
     #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
 
-    fn __add__(self, ref other: Node) -> Node:
+    fn __add__(self, ref other: Node) raises -> Node:
         """Add two nodes."""
         return Node(
             op=Op.ADD,
@@ -127,7 +132,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent2=other,
         )
 
-    fn __sub__(self, var other: Node) -> Node:
+    fn __sub__(self, var other: Node) raises -> Node:
         """Subtract two nodes."""
         return Node(
             op=Op.SUB,
@@ -136,7 +141,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent2=other^,
         )
 
-    fn __mul__(self, var other: Node) -> Node:
+    fn __mul__(self, var other: Node) raises -> Node:
         """Multiply two nodes."""
         return Node(
             value=self.value * other.value,
@@ -145,7 +150,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent2=other^,
         )
 
-    fn __pow__(self, exponent: Float64) -> Node:
+    fn __pow__(self, exponent: Float64) raises -> Node:
         """Raise node to a power."""
         return Node(
             value=self.value**exponent,
@@ -153,7 +158,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent1=self,
         )
 
-    fn tanh(self) -> Node:
+    fn tanh(self) raises -> Node:
         """Apply hyperbolic tangent activation."""
         var result = math.tanh(self.value)
         return Node(
@@ -306,6 +311,22 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
 
         # Also update self's grad to match the registry
         self.grad = registry[self.uuid].grad
+
+    fn backward(mut self) raises:
+        """Compute gradients via backpropagation using the global registry.
+
+        This is a convenience method that automatically uses the global registry.
+        """
+        from unnet.registry import get_global_registry_copy, update_global_grads
+
+        # Get a copy of the global registry
+        var registry = get_global_registry_copy()
+
+        # Perform backward propagation on the copy
+        self.backward(registry)
+
+        # Update gradients in the global registry
+        update_global_grads(registry)
 
     fn backward_simple(mut self):
         """Simple backward that just sets self.grad to 1.0."""

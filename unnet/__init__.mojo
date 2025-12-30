@@ -6,3 +6,8 @@ Educational proof-of-concept for learning neural networks implemented entirely i
 from .grad import Node, Op
 from .nn import Network, Layer, Neuron
 from .uuid import UUID
+from .registry import (
+    get_global_registry_copy,
+    clear_global_registry,
+    update_global_grads,
+)
