@@ -5,3 +5,4 @@ Educational proof-of-concept for learning neural networks implemented entirely i
 
 from .grad import Node, Op
 from .nn import Network, Layer, Neuron
+from .uuid import UUID

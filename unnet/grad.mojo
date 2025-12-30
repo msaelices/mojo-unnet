@@ -162,167 +162,150 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent1=self,
         )
 
-    fn backward(mut self, mut registry: List[Node]):
+    fn backward(mut self, mut registry: Dict[UUID, Node]) raises:
         """Compute gradients via backpropagation using a registry.
 
         Args:
-            registry: A list of all nodes in the computation graph.
+            registry: A dict mapping UUID to all nodes in the computation graph.
         """
-
-        # Helper: find node index by UUID (inline helper)
-        fn find_idx(uuid: UUID, registry: List[Node]) -> Int:
-            for i in range(len(registry)):
-                if registry[i].uuid == uuid:
-                    return i
-            return -1
-
-        # Reset all gradients and also set self.grad in registry
-        for i in range(len(registry)):
-            registry[i].grad = 0.0
+        # Reset all gradients - iterate over keys and index
+        var uuids = List[UUID]()
+        for uuid in registry.keys():
+            uuids.append(uuid)
+        for uuid in uuids:
+            registry[uuid].grad = 0.0
 
         # Collect nodes in topological order (inputs first, then outputs)
-        var topo_order = List[Int]()
+        var topo_order = List[UUID]()
         var visited = List[UUID]()
 
-        # Build topological order iteratively to avoid closure issues
+        # Build topological order iteratively
         var added = True
         while added:
             added = False
-            for i in range(len(registry)):
-                var node = registry[i]
-                if node.uuid in visited:
+            for uuid in uuids:
+                if uuid in visited:
                     continue
+
+                var node = registry[uuid]
 
                 # Check if all parents are already in topo_order
                 var parents_ready = True
                 if node.has_parent1:
-                    var p1_found = False
-                    for idx in topo_order:
-                        if registry[idx].uuid == node.parent1_uuid:
-                            p1_found = True
-                            break
-                    if not p1_found:
+                    if node.parent1_uuid not in topo_order:
                         parents_ready = False
-
                 if parents_ready and node.has_parent2:
-                    var p2_found = False
-                    for idx in topo_order:
-                        if registry[idx].uuid == node.parent2_uuid:
-                            p2_found = True
-                            break
-                    if not p2_found:
+                    if node.parent2_uuid not in topo_order:
                         parents_ready = False
 
                 if parents_ready:
-                    visited.append(node.uuid)
-                    topo_order.append(i)
+                    visited.append(uuid)
+                    topo_order.append(uuid)
                     added = True
 
         # Process in reverse order (outputs to inputs)
         # First, set the gradient for self in the registry
-        var self_idx = find_idx(self.uuid, registry)
-        if self_idx >= 0:
-            registry[self_idx].grad = 1.0
+        if self.uuid in registry:
+            registry[self.uuid].grad = 1.0
 
         print("Processing nodes for backpropagation:")
 
         for i in range(len(topo_order) - 1, -1, -1):
-            var node_idx = topo_order[i]
-            var node = registry[node_idx]
+            var uuid = topo_order[i]
+            var node = registry[uuid]
 
             if node.op == Op.NONE:
                 continue
 
             print("  Node:", node.name, "grad:", node.grad)
 
-            # Find parent indices
-            var p1_idx = -1
-            var p2_idx = -1
-            if node.has_parent1:
-                p1_idx = find_idx(node.parent1_uuid, registry)
-            if node.has_parent2:
-                p2_idx = find_idx(node.parent2_uuid, registry)
-
             # Calculate gradients based on operation
             if node.op == Op.ADD:
-                if p1_idx >= 0:
-                    registry[p1_idx].grad += node.grad
+                if node.has_parent1:
+                    registry[node.parent1_uuid].grad += node.grad
                     print(
                         "    Updated",
-                        registry[p1_idx].name,
+                        registry[node.parent1_uuid].name,
                         "grad =",
-                        registry[p1_idx].grad,
+                        registry[node.parent1_uuid].grad,
                     )
-                if p2_idx >= 0:
-                    registry[p2_idx].grad += node.grad
+                if node.has_parent2:
+                    registry[node.parent2_uuid].grad += node.grad
                     print(
                         "    Updated",
-                        registry[p2_idx].name,
+                        registry[node.parent2_uuid].name,
                         "grad =",
-                        registry[p2_idx].grad,
+                        registry[node.parent2_uuid].grad,
                     )
 
             elif node.op == Op.SUB:
-                if p1_idx >= 0:
-                    registry[p1_idx].grad += node.grad
+                if node.has_parent1:
+                    registry[node.parent1_uuid].grad += node.grad
                     print(
                         "    Updated",
-                        registry[p1_idx].name,
+                        registry[node.parent1_uuid].name,
                         "grad =",
-                        registry[p1_idx].grad,
+                        registry[node.parent1_uuid].grad,
                     )
-                if p2_idx >= 0:
-                    registry[p2_idx].grad -= node.grad
+                if node.has_parent2:
+                    registry[node.parent2_uuid].grad -= node.grad
                     print(
                         "    Updated",
-                        registry[p2_idx].name,
+                        registry[node.parent2_uuid].name,
                         "grad =",
-                        registry[p2_idx].grad,
+                        registry[node.parent2_uuid].grad,
                     )
 
             elif node.op == Op.MUL:
-                if p1_idx >= 0 and p2_idx >= 0:
-                    registry[p1_idx].grad += registry[p2_idx].value * node.grad
-                    registry[p2_idx].grad += registry[p1_idx].value * node.grad
-                    print(
-                        "    Updated",
-                        registry[p1_idx].name,
-                        "grad =",
-                        registry[p1_idx].grad,
+                if node.has_parent1 and node.has_parent2:
+                    registry[node.parent1_uuid].grad += (
+                        registry[node.parent2_uuid].value * node.grad
+                    )
+                    registry[node.parent2_uuid].grad += (
+                        registry[node.parent1_uuid].value * node.grad
                     )
                     print(
                         "    Updated",
-                        registry[p2_idx].name,
+                        registry[node.parent1_uuid].name,
                         "grad =",
-                        registry[p2_idx].grad,
+                        registry[node.parent1_uuid].grad,
+                    )
+                    print(
+                        "    Updated",
+                        registry[node.parent2_uuid].name,
+                        "grad =",
+                        registry[node.parent2_uuid].grad,
                     )
 
             elif node.op == Op.TANH:
-                if p1_idx >= 0:
-                    registry[p1_idx].grad += (1 - node.value**2) * node.grad
+                if node.has_parent1:
+                    registry[node.parent1_uuid].grad += (
+                        1 - node.value**2
+                    ) * node.grad
                     print(
                         "    Updated",
-                        registry[p1_idx].name,
+                        registry[node.parent1_uuid].name,
                         "grad =",
-                        registry[p1_idx].grad,
+                        registry[node.parent1_uuid].grad,
                     )
 
             elif node.op == Op.POW:
-                if p1_idx >= 0 and p2_idx >= 0:
-                    registry[p1_idx].grad += (
-                        registry[p2_idx].value
-                        * registry[p1_idx].value ** (registry[p2_idx].value - 1)
+                if node.has_parent1 and node.has_parent2:
+                    registry[node.parent1_uuid].grad += (
+                        registry[node.parent2_uuid].value
+                        * registry[node.parent1_uuid].value
+                        ** (registry[node.parent2_uuid].value - 1)
                         * node.grad
                     )
                     print(
                         "    Updated",
-                        registry[p1_idx].name,
+                        registry[node.parent1_uuid].name,
                         "grad =",
-                        registry[p1_idx].grad,
+                        registry[node.parent1_uuid].grad,
                     )
 
         # Also update self's grad to match the registry
-        self.grad = registry[self_idx].grad
+        self.grad = registry[self.uuid].grad
 
     fn backward_simple(mut self):
         """Simple backward that just sets self.grad to 1.0."""

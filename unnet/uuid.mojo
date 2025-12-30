@@ -2,6 +2,7 @@
 
 from time import perf_counter_ns
 from utils import StaticTuple
+from hashlib.hasher import Hasher
 
 
 @register_passable("trivial")
@@ -61,7 +62,7 @@ struct MersenneTwister:
 
 
 @register_passable("trivial")
-struct UUID(Copyable, Equatable, Movable, Stringable, Writable):
+struct UUID(Copyable, Equatable, Hashable, Movable, Stringable, Writable):
     var bytes: StaticTuple[UInt8, 16]
 
     fn __init__(out self):
@@ -82,6 +83,11 @@ struct UUID(Copyable, Equatable, Movable, Stringable, Writable):
 
     fn __ne__(self, other: Self) -> Bool:
         return not (self == other)
+
+    fn __hash__[H: Hasher](self, mut hasher: H):
+        # Hash all bytes
+        for i in range(16):
+            hasher.update(self.bytes[i])
 
     fn __str__(self) -> String:
         var result: String = ""
