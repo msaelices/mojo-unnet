@@ -39,11 +39,7 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
     var edges = List[Edge]()
 
     # Get the global registry to look up parents
-    var registry = Dict[UUID, Node]()
-    try:
-        registry = get_global_registry_copy()
-    except:
-        return nodes^, edges^
+    var registry = get_global_registry_copy()
 
     # Stack for traversal using UUIDs
     var stack = List[UUID]()

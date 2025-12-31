@@ -2,6 +2,7 @@
 
 # from builtin._location import __call_location
 import math
+import os
 from memory import UnsafePointer
 from sys.ffi import _Global
 from unnet.uuid import generate_uuid, UUID
@@ -174,11 +175,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         Uses get_global_registry_copy() for working with a local copy.
         """
         # Get a copy of the registry to work with
-        var registry = Dict[UUID, Node]()
-        try:
-            registry = get_global_registry_copy()
-        except:
-            return
+        var registry = get_global_registry_copy()
 
         # Reset all gradients
         var uuids = List[UUID]()
@@ -321,10 +318,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             self.grad = self_grad_opt.value().grad
 
         # Update the global registry with the computed gradients
-        try:
-            update_global_grads(registry)
-        except:
-            pass
+        update_global_grads(registry)
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
@@ -437,30 +431,39 @@ fn get_global_registry_ptr() raises -> (
     return _get_global_registry_ptr()
 
 
-fn get_global_registry_copy() raises -> Dict[UUID, Node]:
+fn get_global_registry_copy() -> Dict[UUID, Node]:
     """Get a copy of the global node registry.
 
     Returns:
         A copy of the global registry dictionary.
     """
-    var ptr = _get_global_registry_ptr()
-    return ptr[].get_registry_copy()
+    try:
+        var ptr = _get_global_registry_ptr()
+        return ptr[].get_registry_copy()
+    except:
+        os.abort()
 
 
-fn update_global_grads(grads: Dict[UUID, Node]) raises:
+fn update_global_grads(grads: Dict[UUID, Node]):
     """Update gradients in the global registry.
 
     Args:
         grads: A dictionary containing the updated gradients.
     """
-    var ptr = _get_global_registry_ptr()
-    ptr[].set_grads(grads)
+    try:
+        var ptr = _get_global_registry_ptr()
+        ptr[].set_grads(grads)
+    except:
+        os.abort()
 
 
-fn clear_global_registry() raises:
+fn clear_global_registry():
     """Clear all nodes from the global registry."""
-    var ptr = _get_global_registry_ptr()
-    ptr[].clear()
+    try:
+        var ptr = _get_global_registry_ptr()
+        ptr[].clear()
+    except:
+        os.abort()
 
 
 # ============== End Global Node Registry ==============
