@@ -469,21 +469,6 @@ fn get_global_registry_ptr() -> UnsafePointer[GradRegistry, MutOrigin.external]:
     return _get_global_registry_ptr()
 
 
-fn get_global_nodes_dict() -> Dict[UUID, Node]:
-    """Get a dictionary of all nodes for graph traversal.
-
-    Returns:
-        A dictionary mapping UUIDs to Node objects.
-    """
-    var registry_ptr = get_global_registry_ptr()
-    var result = Dict[UUID, Node]()
-    for uuid in registry_ptr[].keys():
-        ref entry_opt = registry_ptr[].get(uuid)
-        if entry_opt != None:
-            result[uuid] = entry_opt.value().node
-    return result^
-
-
 fn clear_global_registry():
     """Clear all entries from the global registry."""
     var ptr = _get_global_registry_ptr()

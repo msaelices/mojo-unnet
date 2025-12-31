@@ -7,7 +7,6 @@ from .grad import (
     Node,
     Op,
     get_global_registry_ptr,
-    get_global_nodes_dict,
     clear_global_registry,
 )
 from .nn import Network, Layer, Neuron

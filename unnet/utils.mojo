@@ -1,7 +1,7 @@
 """Utility functions for visualization and graph traversal."""
 
 import os
-from .grad import Edge, Node, Op, get_global_nodes_dict
+from .grad import Edge, Node, Op, get_global_registry_ptr
 from python import Python, PythonObject
 
 # Helper functions for graph traversal and visualization
@@ -39,8 +39,8 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
     var nodes = List[Node]()
     var edges = List[Edge]()
 
-    # Get the global nodes dict to look up parents
-    var registry = get_global_nodes_dict()
+    # Get the global registry pointer to look up parents
+    var registry_ptr = get_global_registry_ptr()
 
     # Stack for traversal using UUIDs
     var stack = List[UUID]()
@@ -57,27 +57,27 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
             continue
 
         # Look up the node in the registry (returns Optional)
-        var current_opt = registry.get(current_uuid)
+        var current_opt = registry_ptr[].get(current_uuid)
         if current_opt == None:
             continue
 
-        var current = current_opt.value()
+        var current = current_opt.value().node
         visited.append(current_uuid)
 
         # Process parents using their UUIDs
         if current.has_parent1:
             var parent1_uuid = current.parent1_uuid
-            var parent1_opt = registry.get(parent1_uuid)
+            var parent1_opt = registry_ptr[].get(parent1_uuid)
             if parent1_opt != None:
-                var parent1 = parent1_opt.value()
+                var parent1 = parent1_opt.value().node
                 edges.append((parent1, current))
                 stack.append(parent1_uuid)
 
         if current.has_parent2:
             var parent2_uuid = current.parent2_uuid
-            var parent2_opt = registry.get(parent2_uuid)
+            var parent2_opt = registry_ptr[].get(parent2_uuid)
             if parent2_opt != None:
-                var parent2 = parent2_opt.value()
+                var parent2 = parent2_opt.value().node
                 edges.append((parent2, current))
                 stack.append(parent2_uuid)
 
@@ -105,8 +105,8 @@ fn draw(var graph: Node) raises -> PythonObject:
     var Digraph = graphviz_module.Digraph
     var plot = Digraph()
 
-    # Get the global nodes dict to look up nodes
-    var registry = get_global_nodes_dict()
+    # Get the global registry pointer to look up nodes
+    var registry_ptr = get_global_registry_ptr()
 
     # Track visited UUIDs
     var visited = List[UUID]()
@@ -121,11 +121,11 @@ fn draw(var graph: Node) raises -> PythonObject:
             continue
 
         # Look up the node in the registry
-        var current_opt = registry.get(current_uuid)
+        var current_opt = registry_ptr[].get(current_uuid)
         if current_opt == None:
             continue
 
-        var current = current_opt.value()
+        var current = current_opt.value().node
         visited.append(current_uuid)
 
         var node_id = get_node_id(current)
@@ -148,7 +148,7 @@ fn draw(var graph: Node) raises -> PythonObject:
         # Process parents and create edges using UUIDs
         if current.has_parent1:
             var parent1_uuid = current.parent1_uuid
-            var parent1_opt = registry.get(parent1_uuid)
+            var parent1_opt = registry_ptr[].get(parent1_uuid)
             if parent1_opt != None:
                 var parent1_id = String(parent1_uuid)
                 if op:
@@ -159,7 +159,7 @@ fn draw(var graph: Node) raises -> PythonObject:
 
         if current.has_parent2:
             var parent2_uuid = current.parent2_uuid
-            var parent2_opt = registry.get(parent2_uuid)
+            var parent2_opt = registry_ptr[].get(parent2_uuid)
             if parent2_opt != None:
                 var parent2_id = String(parent2_uuid)
                 if op:
