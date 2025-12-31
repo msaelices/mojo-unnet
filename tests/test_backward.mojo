@@ -49,6 +49,14 @@ def test_backward_simple_addition():
         registry_ptr[][b.uuid].grad, 0.0
     )  # b is not used in the computation
 
+    # Also verify that node.get_grad() returns the same values
+    assert_equal(e.get_grad(), 1.0)
+    assert_equal(a.get_grad(), 1.0)
+    assert_equal(c.get_grad(), 1.0)
+    assert_equal(d.get_grad(), 1.0)
+    assert_equal(dplusc.get_grad(), 1.0)
+    assert_equal(b.get_grad(), 0.0)
+
 
 def test_backward_multiplication():
     """Test backward propagation with multiplication."""
@@ -73,6 +81,11 @@ def test_backward_multiplication():
     assert_equal(registry_ptr[][z.uuid].grad, 1.0)
     assert_equal(registry_ptr[][x.uuid].grad, 4.0)
     assert_equal(registry_ptr[][y.uuid].grad, 3.0)
+
+    # Also verify that node.get_grad() returns the same values
+    assert_equal(z.get_grad(), 1.0)
+    assert_equal(x.get_grad(), 4.0)
+    assert_equal(y.get_grad(), 3.0)
 
 
 def test_backward_subtraction():
@@ -99,6 +112,11 @@ def test_backward_subtraction():
     assert_equal(registry_ptr[][x.uuid].grad, 1.0)
     assert_equal(registry_ptr[][y.uuid].grad, -1.0)
 
+    # Also verify that node.get_grad() returns the same values
+    assert_equal(z.get_grad(), 1.0)
+    assert_equal(x.get_grad(), 1.0)
+    assert_equal(y.get_grad(), -1.0)
+
 
 def test_backward_tanh():
     """Test backward propagation with tanh activation."""
@@ -120,6 +138,10 @@ def test_backward_tanh():
     # At x=0, tanh(0) = 0, so dy/dx = 1 - 0 = 1
     assert_equal(registry_ptr[][y.uuid].grad, 1.0)
     assert_equal(registry_ptr[][x.uuid].grad, 1.0)
+
+    # Also verify that node.get_grad() returns the same values
+    assert_equal(y.get_grad(), 1.0)
+    assert_equal(x.get_grad(), 1.0)
 
 
 def test_backward_complex_graph():
@@ -172,6 +194,15 @@ def test_backward_complex_graph():
     assert_equal(registry_ptr[][b.uuid].grad, 4.0)
     assert_equal(registry_ptr[][c.uuid].grad, 5.0)
 
+    # Also verify that node.get_grad() returns the same values
+    assert_equal(result.get_grad(), 1.0)
+    assert_equal(product.get_grad(), 1.0)
+    assert_equal(d.get_grad(), -1.0)
+    assert_equal(sum.get_grad(), 4.0)
+    assert_equal(a.get_grad(), 4.0)
+    assert_equal(b.get_grad(), 4.0)
+    assert_equal(c.get_grad(), 5.0)
+
 
 def test_backward_multiple_uses():
     """Test backward propagation when a node is used multiple times."""
@@ -196,6 +227,11 @@ def test_backward_multiple_uses():
     assert_equal(registry_ptr[][y.uuid].grad, 1.0)
     assert_equal(registry_ptr[][x.uuid].grad, 3.0)
     assert_equal(registry_ptr[][x_copy.uuid].grad, 3.0)
+
+    # Also verify that node.get_grad() returns the same values
+    assert_equal(y.get_grad(), 1.0)
+    assert_equal(x.get_grad(), 3.0)
+    assert_equal(x_copy.get_grad(), 3.0)
 
 
 def main():
