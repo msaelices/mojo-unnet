@@ -403,7 +403,7 @@ fn _get_global_registry_ptr() -> (
     try:
         return _global_registry.get_or_create_ptr()
     except:
-        os.abort()
+        os.abort("Failed to get global node registry pointer.")
 
 
 fn _register_node(node: Node):
@@ -441,7 +441,7 @@ fn get_global_registry_copy() -> Dict[UUID, Node]:
         var ptr = _get_global_registry_ptr()
         return ptr[].get_registry_copy()
     except:
-        os.abort()
+        os.abort("Failed to get global node registry copy.")
 
 
 fn update_global_grads(grads: Dict[UUID, Node]):
@@ -454,7 +454,7 @@ fn update_global_grads(grads: Dict[UUID, Node]):
         var ptr = _get_global_registry_ptr()
         ptr[].set_grads(grads)
     except:
-        os.abort()
+        os.abort("Failed to update global node registry gradients.")
 
 
 fn clear_global_registry():
