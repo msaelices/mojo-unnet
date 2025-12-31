@@ -136,12 +136,12 @@ fn draw(var graph: Node) raises -> PythonObject:
 
         # Draw this node
         var label = String(name, " | v: ", value, " | g: ", grad)
-        plot.node(node_id, label, "record")
+        plot.node(node_id, label)
 
         # If node has an operation, add operation node and connect it
         if op:
             var op_node_id = node_id + "_op"
-            plot.node(op_node_id, String(op), "circle")
+            plot.node(op_node_id, String(op))
             plot.edge(op_node_id, node_id)
 
         # Process parents and create edges using UUIDs
