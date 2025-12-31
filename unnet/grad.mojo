@@ -168,20 +168,28 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         _register_node(result)
         return result
 
-    fn backward(mut self) raises:
+    fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
 
-        Uses get_global_registry_ptr() for direct access without copying.
+        Uses get_global_registry_copy() for working with a local copy.
         """
-        # Get pointer to registry and work with it directly
-        var registry_ptr = get_global_registry_ptr()
+        # Get a copy of the registry to work with
+        var registry = Dict[UUID, Node]()
+        try:
+            registry = get_global_registry_copy()
+        except:
+            return
 
-        # Reset all gradients - iterate over keys and index
+        # Reset all gradients
         var uuids = List[UUID]()
-        for uuid in registry_ptr[]._registry.keys():
+        for uuid in registry.keys():
             uuids.append(uuid)
         for uuid in uuids:
-            registry_ptr[]._registry[uuid].grad = 0.0
+            var node_opt = registry.get(uuid)
+            if node_opt != None:
+                var mut_node = node_opt.value()
+                mut_node.grad = 0.0
+                registry[uuid] = mut_node
 
         # Collect nodes in topological order (inputs first, then outputs)
         var topo_order = List[UUID]()
@@ -195,7 +203,10 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                 if uuid in visited:
                     continue
 
-                var node = registry_ptr[]._registry[uuid]
+                var node_opt = registry.get(uuid)
+                if node_opt == None:
+                    continue
+                var node = node_opt.value()
 
                 # Check if all parents are already in topo_order
                 var parents_ready = True
@@ -213,14 +224,20 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
 
         # Process in reverse order (outputs to inputs)
         # First, set the gradient for self in the registry
-        if self.uuid in registry_ptr[]._registry:
-            registry_ptr[]._registry[self.uuid].grad = 1.0
+        var self_opt = registry.get(self.uuid)
+        if self_opt != None:
+            var mut_self = self_opt.value()
+            mut_self.grad = 1.0
+            registry[self.uuid] = mut_self
 
         print("Processing nodes for backpropagation:")
 
         for i in range(len(topo_order) - 1, -1, -1):
             var uuid = topo_order[i]
-            var node = registry_ptr[]._registry[uuid]
+            var node_opt = registry.get(uuid)
+            if node_opt == None:
+                continue
+            var node = node_opt.value()
 
             if node.op == Op.NONE:
                 continue
@@ -230,103 +247,84 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             # Calculate gradients based on operation
             if node.op == Op.ADD:
                 if node.has_parent1:
-                    registry_ptr[]._registry[
-                        node.parent1_uuid
-                    ].grad += node.grad
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent1_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent1_uuid].grad,
-                    )
+                    var p1_opt = registry.get(node.parent1_uuid)
+                    if p1_opt != None:
+                        var p1 = p1_opt.value()
+                        p1.grad += node.grad
+                        registry[node.parent1_uuid] = p1
+                        print("    Updated", p1.name, "grad =", p1.grad)
                 if node.has_parent2:
-                    registry_ptr[]._registry[
-                        node.parent2_uuid
-                    ].grad += node.grad
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent2_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent2_uuid].grad,
-                    )
+                    var p2_opt = registry.get(node.parent2_uuid)
+                    if p2_opt != None:
+                        var p2 = p2_opt.value()
+                        p2.grad += node.grad
+                        registry[node.parent2_uuid] = p2
+                        print("    Updated", p2.name, "grad =", p2.grad)
 
             elif node.op == Op.SUB:
                 if node.has_parent1:
-                    registry_ptr[]._registry[
-                        node.parent1_uuid
-                    ].grad += node.grad
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent1_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent1_uuid].grad,
-                    )
+                    var p1_opt = registry.get(node.parent1_uuid)
+                    if p1_opt != None:
+                        var p1 = p1_opt.value()
+                        p1.grad += node.grad
+                        registry[node.parent1_uuid] = p1
+                        print("    Updated", p1.name, "grad =", p1.grad)
                 if node.has_parent2:
-                    registry_ptr[]._registry[
-                        node.parent2_uuid
-                    ].grad -= node.grad
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent2_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent2_uuid].grad,
-                    )
+                    var p2_opt = registry.get(node.parent2_uuid)
+                    if p2_opt != None:
+                        var p2 = p2_opt.value()
+                        p2.grad -= node.grad
+                        registry[node.parent2_uuid] = p2
+                        print("    Updated", p2.name, "grad =", p2.grad)
 
             elif node.op == Op.MUL:
                 if node.has_parent1 and node.has_parent2:
-                    registry_ptr[]._registry[node.parent1_uuid].grad += (
-                        registry_ptr[]._registry[node.parent2_uuid].value
-                        * node.grad
-                    )
-                    registry_ptr[]._registry[node.parent2_uuid].grad += (
-                        registry_ptr[]._registry[node.parent1_uuid].value
-                        * node.grad
-                    )
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent1_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent1_uuid].grad,
-                    )
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent2_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent2_uuid].grad,
-                    )
+                    var p1_opt = registry.get(node.parent1_uuid)
+                    var p2_opt = registry.get(node.parent2_uuid)
+                    if p1_opt != None and p2_opt != None:
+                        var p1 = p1_opt.value()
+                        var p2 = p2_opt.value()
+                        var p2_val = p2.value
+                        var p1_val = p1.value
+                        p1.grad += p2_val * node.grad
+                        p2.grad += p1_val * node.grad
+                        registry[node.parent1_uuid] = p1
+                        registry[node.parent2_uuid] = p2
+                        print("    Updated", p1.name, "grad =", p1.grad)
+                        print("    Updated", p2.name, "grad =", p2.grad)
 
             elif node.op == Op.TANH:
                 if node.has_parent1:
-                    registry_ptr[]._registry[node.parent1_uuid].grad += (
-                        1 - node.value**2
-                    ) * node.grad
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent1_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent1_uuid].grad,
-                    )
+                    var p1_opt = registry.get(node.parent1_uuid)
+                    if p1_opt != None:
+                        var p1 = p1_opt.value()
+                        p1.grad += (1 - node.value**2) * node.grad
+                        registry[node.parent1_uuid] = p1
+                        print("    Updated", p1.name, "grad =", p1.grad)
 
             elif node.op == Op.POW:
                 if node.has_parent1 and node.has_parent2:
-                    registry_ptr[]._registry[node.parent1_uuid].grad += (
-                        registry_ptr[]._registry[node.parent2_uuid].value
-                        * registry_ptr[]._registry[node.parent1_uuid].value
-                        ** (
-                            registry_ptr[]._registry[node.parent2_uuid].value
-                            - 1
+                    var p1_opt = registry.get(node.parent1_uuid)
+                    var p2_opt = registry.get(node.parent2_uuid)
+                    if p1_opt != None and p2_opt != None:
+                        var p1 = p1_opt.value()
+                        var p2 = p2_opt.value()
+                        p1.grad += (
+                            p2.value * p1.value ** (p2.value - 1) * node.grad
                         )
-                        * node.grad
-                    )
-                    print(
-                        "    Updated",
-                        registry_ptr[]._registry[node.parent1_uuid].name,
-                        "grad =",
-                        registry_ptr[]._registry[node.parent1_uuid].grad,
-                    )
+                        registry[node.parent1_uuid] = p1
+                        print("    Updated", p1.name, "grad =", p1.grad)
 
         # Also update self's grad to match the registry
-        self.grad = registry_ptr[]._registry[self.uuid].grad
+        var self_grad_opt = registry.get(self.uuid)
+        if self_grad_opt != None:
+            self.grad = self_grad_opt.value().grad
+
+        # Update the global registry with the computed gradients
+        try:
+            update_global_grads(registry)
+        except:
+            pass
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
