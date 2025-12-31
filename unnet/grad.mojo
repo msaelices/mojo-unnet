@@ -122,9 +122,11 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     #     var call_location = __call_location()
     #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
 
+    @always_inline
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
 
+    @always_inline
     fn __add__(self, other: Node) -> Node:
         """Add two nodes."""
         var result = Node(
@@ -136,6 +138,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         _register_node(result)
         return result^
 
+    @always_inline
     fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
         var result = Node(
@@ -147,6 +150,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         _register_node(result)
         return result^
 
+    @always_inline
     fn __mul__(self, var other: Node) -> Node:
         """Multiply two nodes."""
         var result = Node(
@@ -158,6 +162,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         _register_node(result)
         return result^
 
+    @always_inline
     fn __pow__(self, exponent: Float64) -> Node:
         """Raise node to a power."""
         var result = Node(
@@ -168,6 +173,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         _register_node(result)
         return result^
 
+    @always_inline
     fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result_val = math.tanh(self.value)
@@ -179,6 +185,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         _register_node(result)
         return result^
 
+    @always_inline
     fn get_grad(self) -> Float64:
         """Get the gradient of this node."""
         var registry_ptr = get_global_registry_ptr()
