@@ -25,6 +25,10 @@ struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
     fn __eq__(self, other: Self) -> Bool:
         return self.v == other.v
 
+    fn __bool__(self) -> Bool:
+        """Return True if this is not a NONE operation."""
+        return self.v != Op.NONE
+
     fn __str__(self) -> String:
         if self.v == Op.NONE:
             return ""

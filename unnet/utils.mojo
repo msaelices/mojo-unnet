@@ -132,16 +132,16 @@ fn draw(var graph: Node) -> PythonObject:
             var name = node_data[0]
             var value = node_data[1]
             var grad = node_data[2]
-            var op_str = String(current.op)
+            var op = current.op
 
             # Draw this node
             var label = String(name, " | v: ", value, " | g: ", grad)
             plot.node(node_id, label, "record")
 
             # If node has an operation, add operation node and connect it
-            if len(op_str) > 0:
+            if op:
                 var op_node_id = node_id + "_op"
-                plot.node(op_node_id, op_str, "circle")
+                plot.node(op_node_id, String(op), "circle")
                 plot.edge(op_node_id, node_id)
 
             # Process parents and create edges using UUIDs
@@ -150,7 +150,7 @@ fn draw(var graph: Node) -> PythonObject:
                 var parent1_opt = registry.get(parent1_uuid)
                 if parent1_opt != None:
                     var parent1_id = String(parent1_uuid)
-                    if len(op_str) > 0:
+                    if op:
                         plot.edge(parent1_id, node_id + "_op")
                     else:
                         plot.edge(parent1_id, node_id)
@@ -161,7 +161,7 @@ fn draw(var graph: Node) -> PythonObject:
                 var parent2_opt = registry.get(parent2_uuid)
                 if parent2_opt != None:
                     var parent2_id = String(parent2_uuid)
-                    if len(op_str) > 0:
+                    if op:
                         plot.edge(parent2_id, node_id + "_op")
                     else:
                         plot.edge(parent2_id, node_id)
