@@ -3,7 +3,7 @@
 # from builtin._location import __call_location
 import math
 import os
-from collections.dict import _DictKeyIter
+from collections.dict import DictKeyError, _DictKeyIter
 from memory import UnsafePointer
 from sys.ffi import _Global
 from unnet.uuid import generate_uuid, UUID
@@ -46,14 +46,13 @@ struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
         return "UnknownOp"
 
 
-struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
+struct Node(Copyable, Equatable, Movable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
     var uuid: UUID
     var value: Float64
     var op: Op
-    var grad: Float64
     var name: String
     # Store parent UUIDs to avoid recursive type
     var parent1_uuid: UUID
@@ -70,7 +69,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.uuid = generate_uuid()
         self.value = value
         self.name = name
-        self.grad = 0.0
         self.op = Op.NONE
         self.parent1_uuid = UUID()
         self.parent2_uuid = UUID()
@@ -82,8 +80,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         out self,
         value: Float64,
         op: Op,
-        var parent1: Node,
-        var parent2: Optional[Node] = None,
+        var parent1_uuid: UUID,
+        var parent2_uuid: Optional[UUID] = None,
         name: String = "N/A",
     ):
         """Initialize a node with a value and optional name."""
@@ -92,15 +90,14 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.op = op
         self.name = name
         # Store parent UUIDs
-        self.parent1_uuid = parent1.uuid
+        self.parent1_uuid = parent1_uuid
         self.has_parent1 = True
-        if parent2:
-            self.parent2_uuid = parent2.value().uuid
+        if parent2_uuid:
+            self.parent2_uuid = parent2_uuid.value()
             self.has_parent2 = True
         else:
             self.parent2_uuid = UUID()
             self.has_parent2 = False
-        self.grad = 0.0
         # Note: don't register here - will be registered by the operator methods
         # after construction to avoid double registration
 
@@ -129,13 +126,13 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
 
-    fn __add__(self, ref other: Node) -> Node:
+    fn __add__(self, other: Node) -> Node:
         """Add two nodes."""
         var result = Node(
             op=Op.ADD,
             value=self.value + other.value,
-            parent1=self,
-            parent2=other,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
         )
         _register_node(result)
         return result^
@@ -145,8 +142,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         var result = Node(
             op=Op.SUB,
             value=self.value - other.value,
-            parent1=self,
-            parent2=other^,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
         )
         _register_node(result)
         return result^
@@ -156,8 +153,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         var result = Node(
             value=self.value * other.value,
             op=Op.MUL,
-            parent1=self,
-            parent2=other^,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
         )
         _register_node(result)
         return result^
@@ -167,7 +164,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         var result = Node(
             value=self.value**exponent,
             op=Op.POW,
-            parent1=self,
+            parent1_uuid=self.uuid,
         )
         _register_node(result)
         return result^
@@ -178,10 +175,19 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         var result = Node(
             value=result_val,
             op=Op.TANH,
-            parent1=self,
+            parent1_uuid=self.uuid,
         )
         _register_node(result)
         return result^
+
+    fn get_grad(self) -> Float64:
+        """Get the gradient of this node."""
+        var registry_ptr = get_global_registry_ptr()
+        ref node_opt = registry_ptr[].get(self.uuid)
+        if node_opt != None:
+            var grad = node_opt.value()
+            return grad
+        return 0.0
 
     fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
@@ -321,26 +327,30 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
 # Consolidated here to avoid circular dependency with separate registry module
 
 
-struct _NodeRegistry(Copyable):
-    """Global registry of all nodes in the computation graph.
+struct GradRegistry(Copyable):
+    """Global registry of all gradients in the computation graph.
 
-    This struct maintains a dictionary mapping UUIDs to Nodes, allowing
+    This struct maintains a dictionary mapping UUIDs to Float64, allowing
     O(1) lookup during backpropagation without requiring manual registration.
     """
 
-    comptime RegType = Dict[UUID, Node]
+    comptime RegType = Dict[UUID, Float64]
 
     var _registry: Self.RegType
 
     fn __init__(out self):
         """Initialize an empty registry."""
-        self._registry = Dict[UUID, Node]()
+        self._registry = Self.RegType()
 
-    fn __getitem__(self, uuid: UUID) raises -> Node:
+    fn __getitem__(
+        ref self, ref key: Self.RegType.K
+    ) raises DictKeyError[Self.RegType.K, origin_of(key)] -> ref [
+        self._registry._entries[0].value().value
+    ] Self.RegType.V:
         """Get a node from the registry by UUID.
 
         Args:
-            uuid: The UUID of the node to retrieve.
+            key: The UUID of the node to retrieve.
 
         Returns:
             The node associated with the given UUID.
@@ -348,24 +358,25 @@ struct _NodeRegistry(Copyable):
         Raises:
             KeyError: If the UUID is not found in the registry.
         """
-        return self._registry[uuid]
+        return self._registry[key]
 
-    fn register(mut self, node: Node):
+    fn register(mut self, ref node: Node, grad: Float64):
         """Register a node in the global registry.
 
         Args:
             node: The node to register.
+            grad: The initial gradient value for the node.
         """
-        self._registry[node.uuid] = node
+        self._registry[node.uuid] = grad
 
-    fn get(self, uuid: UUID) -> Optional[Node]:
-        """Get a node from the registry by UUID.
+    fn get(self, uuid: UUID) -> Optional[Float64]:
+        """Get a grad from the registry by UUID.
 
         Args:
             uuid: The UUID of the node to retrieve.
 
         Returns:
-            An Optional containing the node if found, or None if not found.
+            An Optional containing the grad if found, or None if not found.
         """
         return self._registry.get(uuid)
 
@@ -395,7 +406,7 @@ struct _NodeRegistry(Copyable):
         for uuid in self._registry.keys():
             uuids.append(uuid)
         for uuid in uuids:
-            result[uuid] = self._registry[uuid]
+            result[uuid] = self._registry[uuid].copy()
         return result^
 
     fn set_grads(mut self, grads: Dict[UUID, Node]) raises:
@@ -416,13 +427,13 @@ struct _NodeRegistry(Copyable):
         self._registry = Dict[UUID, Node]()
 
 
-fn _init_node_registry() -> _NodeRegistry:
+fn _init_node_registry() -> GradRegistry:
     """Initialize the global node registry.
 
     Returns:
-        A new _NodeRegistry instance.
+        A new GradRegistry instance.
     """
-    return _NodeRegistry()
+    return GradRegistry()
 
 
 # Global node registry instance
@@ -430,7 +441,7 @@ comptime _global_registry = _Global["node_registry", _init_node_registry]
 
 
 fn _get_global_registry_ptr() -> (
-    UnsafePointer[_NodeRegistry, MutOrigin.external]
+    UnsafePointer[GradRegistry, MutOrigin.external]
 ):
     """Get the global registry pointer (internal).
 
@@ -455,9 +466,7 @@ fn _register_node(node: Node):
     ptr[].register(node)
 
 
-fn get_global_registry_ptr() -> (
-    UnsafePointer[_NodeRegistry, MutOrigin.external]
-):
+fn get_global_registry_ptr() -> UnsafePointer[GradRegistry, MutOrigin.external]:
     """Get the global registry pointer.
 
     Returns:
