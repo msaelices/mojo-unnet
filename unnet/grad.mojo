@@ -468,44 +468,5 @@ fn clear_global_registry() raises:
 # ============== End Global Node Registry ==============
 
 
+# Edge type for graph visualization (used by utils.walk when re-enabled)
 comptime Edge = Tuple[Node, Node]
-
-
-fn calculate_gradients(
-    op: Op,
-    result_ptr: UnsafePointer[Node, MutAnyOrigin],
-    node_ptr: UnsafePointer[Node, MutAnyOrigin],
-    other_ptr: UnsafePointer[Node, MutAnyOrigin],
-) -> None:
-    """Calculate gradients for a node based on its operation.
-
-    Args:
-        op: The operation type of the node.
-        result_ptr: Pointer to the result node from the operation.
-        node_ptr: Pointer to the first parent node to update gradients for.
-        other_ptr: Pointer to the second parent node involved in the operation (may be null for unary ops).
-    """
-    if op == Op.NONE:
-        return
-    elif op == Op.ADD:
-        # For addition: d/da(a+b) = 1, d/db(a+b) = 1
-        node_ptr[].grad += result_ptr[].grad
-        other_ptr[].grad += result_ptr[].grad
-    elif op == Op.SUB:
-        # For subtraction: d/da(a-b) = 1, d/db(a-b) = -1
-        node_ptr[].grad += result_ptr[].grad
-        other_ptr[].grad -= result_ptr[].grad
-    elif op == Op.MUL:
-        # For multiplication: d/da(a*b) = b, d/db(a*b) = a
-        node_ptr[].grad += other_ptr[].value * result_ptr[].grad
-        other_ptr[].grad += node_ptr[].value * result_ptr[].grad
-    elif op == Op.POW:
-        # For power: d/da(a^b) = b * a^(b-1)
-        node_ptr[].grad += (
-            other_ptr[].value
-            * node_ptr[].value ** (other_ptr[].value - 1)
-            * result_ptr[].grad
-        )
-    elif op == Op.TANH:
-        # For tanh: d/dx(tanh(x)) = 1 - tanh(x)^2
-        node_ptr[].grad += (1 - result_ptr[].value ** 2) * result_ptr[].grad
