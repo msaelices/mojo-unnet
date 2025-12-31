@@ -3,7 +3,6 @@
 # from builtin._location import __call_location
 import math
 from memory import UnsafePointer
-from benchmark import keep
 from unnet.uuid import generate_uuid, UUID
 from unnet.registry import register_node
 
