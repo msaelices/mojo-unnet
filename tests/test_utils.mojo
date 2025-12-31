@@ -20,8 +20,8 @@ def test_node_creation():
     assert_equal(node2.value, 5.0)
     assert_equal(node1.name, "x")
     assert_equal(node2.name, "y")
-    assert_equal(node1.grad, 0.0)
-    assert_equal(node2.grad, 0.0)
+    assert_equal(node1.get_grad(), 0.0)
+    assert_equal(node2.get_grad(), 0.0)
 
 
 def test_node_operations():
@@ -66,10 +66,10 @@ def test_node_tanh():
 def test_node_backward():
     """Test backward pass initialization."""
     var node = Node(5.0, "test")
-    assert_equal(node.grad, 0.0)
+    assert_equal(node.get_grad(), 0.0)
 
     node.backward()
-    assert_equal(node.grad, 1.0)
+    assert_equal(node.get_grad(), 1.0)
 
 
 def test_walk_single_node():

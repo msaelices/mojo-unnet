@@ -3,12 +3,13 @@
 # from builtin._location import __call_location
 import math
 import os
+from collections.dict import DictKeyError, _DictKeyIter
 from memory import UnsafePointer
 from sys.ffi import _Global
 from unnet.uuid import generate_uuid, UUID
 
 
-struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
+struct Op(Equatable, ImplicitlyCopyable, Movable, Stringable):
     comptime NONE: Int = 0
     comptime ADD: Int = 1
     comptime SUB: Int = 2
@@ -45,14 +46,13 @@ struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
         return "UnknownOp"
 
 
-struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
+struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
     var uuid: UUID
     var value: Float64
     var op: Op
-    var grad: Float64
     var name: String
     # Store parent UUIDs to avoid recursive type
     var parent1_uuid: UUID
@@ -69,7 +69,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.uuid = generate_uuid()
         self.value = value
         self.name = name
-        self.grad = 0.0
         self.op = Op.NONE
         self.parent1_uuid = UUID()
         self.parent2_uuid = UUID()
@@ -81,8 +80,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         out self,
         value: Float64,
         op: Op,
-        var parent1: Node,
-        var parent2: Optional[Node] = None,
+        var parent1_uuid: UUID,
+        var parent2_uuid: Optional[UUID] = None,
         name: String = "N/A",
     ):
         """Initialize a node with a value and optional name."""
@@ -91,15 +90,14 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.op = op
         self.name = name
         # Store parent UUIDs
-        self.parent1_uuid = parent1.uuid
+        self.parent1_uuid = parent1_uuid
         self.has_parent1 = True
-        if parent2:
-            self.parent2_uuid = parent2.value().uuid
+        if parent2_uuid:
+            self.parent2_uuid = parent2_uuid.value()
             self.has_parent2 = True
         else:
             self.parent2_uuid = UUID()
             self.has_parent2 = False
-        self.grad = 0.0
         # Note: don't register here - will be registered by the operator methods
         # after construction to avoid double registration
 
@@ -109,7 +107,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.uuid = other.uuid
         self.value = other.value
         self.op = other.op
-        self.grad = other.grad
         self.name = other.name
         self.parent1_uuid = other.parent1_uuid
         self.parent2_uuid = other.parent2_uuid
@@ -125,81 +122,91 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     #     var call_location = __call_location()
     #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
 
+    @always_inline
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
 
-    fn __add__(self, ref other: Node) -> Node:
+    @always_inline
+    fn __add__(self, other: Node) -> Node:
         """Add two nodes."""
         var result = Node(
             op=Op.ADD,
             value=self.value + other.value,
-            parent1=self,
-            parent2=other,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
         )
         _register_node(result)
         return result^
 
+    @always_inline
     fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
         var result = Node(
             op=Op.SUB,
             value=self.value - other.value,
-            parent1=self,
-            parent2=other^,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
         )
         _register_node(result)
         return result^
 
+    @always_inline
     fn __mul__(self, var other: Node) -> Node:
         """Multiply two nodes."""
         var result = Node(
             value=self.value * other.value,
             op=Op.MUL,
-            parent1=self,
-            parent2=other^,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
         )
         _register_node(result)
         return result^
 
+    @always_inline
     fn __pow__(self, exponent: Float64) -> Node:
         """Raise node to a power."""
         var result = Node(
             value=self.value**exponent,
             op=Op.POW,
-            parent1=self,
+            parent1_uuid=self.uuid,
         )
         _register_node(result)
         return result^
 
+    @always_inline
     fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result_val = math.tanh(self.value)
         var result = Node(
             value=result_val,
             op=Op.TANH,
-            parent1=self,
+            parent1_uuid=self.uuid,
         )
         _register_node(result)
         return result^
 
+    @always_inline
+    fn get_grad(self) -> Float64:
+        """Get the gradient of this node."""
+        var registry_ptr = get_global_registry_ptr()
+        ref entry_opt = registry_ptr[].get(self.uuid)
+        if entry_opt != None:
+            return entry_opt.value().grad
+        return 0.0
+
     fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
 
-        Uses get_global_registry_copy() for working with a local copy.
+        The registry stores GradEntry(grad, node) for each UUID.
         """
-        # Get a copy of the registry to work with
-        var registry = get_global_registry_copy()
+        var registry_ptr = get_global_registry_ptr()
 
         # Reset all gradients
         var uuids = List[UUID]()
-        for uuid in registry.keys():
+        for uuid in registry_ptr[].keys():
             uuids.append(uuid)
         for uuid in uuids:
-            var node_opt = registry.get(uuid)
-            if node_opt != None:
-                var mut_node = node_opt.value()
-                mut_node.grad = 0.0
-                registry[uuid] = mut_node
+            registry_ptr[].set_grad(uuid, 0.0)
 
         # Collect nodes in topological order (inputs first, then outputs)
         var topo_order = List[UUID]()
@@ -213,10 +220,11 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                 if uuid in visited:
                     continue
 
-                var node_opt = registry.get(uuid)
-                if node_opt == None:
+                ref entry_opt = registry_ptr[].get(uuid)
+                if entry_opt == None:
                     continue
-                var node = node_opt.value()
+                var entry = entry_opt.value()
+                ref node = entry.node
 
                 # Check if all parents are already in topo_order
                 var parents_ready = True
@@ -234,18 +242,16 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
 
         # Process in reverse order (outputs to inputs)
         # First, set the gradient for self in the registry
-        var self_opt = registry.get(self.uuid)
-        if self_opt != None:
-            var mut_self = self_opt.value()
-            mut_self.grad = 1.0
-            registry[self.uuid] = mut_self
+        registry_ptr[].set_grad(self.uuid, 1.0)
 
         for i in range(len(topo_order) - 1, -1, -1):
             var uuid = topo_order[i]
-            var node_opt = registry.get(uuid)
-            if node_opt == None:
+            ref entry_opt = registry_ptr[].get(uuid)
+            if entry_opt == None:
                 continue
-            var node = node_opt.value()
+            var entry = entry_opt.value()
+            var node_grad = entry.grad
+            ref node = entry.node
 
             if node.op == Op.NONE:
                 continue
@@ -253,76 +259,57 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             # Calculate gradients based on operation
             if node.op == Op.ADD:
                 if node.has_parent1:
-                    var p1_opt = registry.get(node.parent1_uuid)
-                    if p1_opt != None:
-                        var p1 = p1_opt.value()
-                        p1.grad += node.grad
-                        registry[node.parent1_uuid] = p1
+                    registry_ptr[].add_to_grad(node.parent1_uuid, node_grad)
                 if node.has_parent2:
-                    var p2_opt = registry.get(node.parent2_uuid)
-                    if p2_opt != None:
-                        var p2 = p2_opt.value()
-                        p2.grad += node.grad
-                        registry[node.parent2_uuid] = p2
+                    registry_ptr[].add_to_grad(node.parent2_uuid, node_grad)
 
             elif node.op == Op.SUB:
                 if node.has_parent1:
-                    var p1_opt = registry.get(node.parent1_uuid)
-                    if p1_opt != None:
-                        var p1 = p1_opt.value()
-                        p1.grad += node.grad
-                        registry[node.parent1_uuid] = p1
+                    registry_ptr[].add_to_grad(node.parent1_uuid, node_grad)
                 if node.has_parent2:
-                    var p2_opt = registry.get(node.parent2_uuid)
-                    if p2_opt != None:
-                        var p2 = p2_opt.value()
-                        p2.grad -= node.grad
-                        registry[node.parent2_uuid] = p2
+                    registry_ptr[].add_to_grad(node.parent2_uuid, -node_grad)
 
             elif node.op == Op.MUL:
                 if node.has_parent1 and node.has_parent2:
-                    var p1_opt = registry.get(node.parent1_uuid)
-                    var p2_opt = registry.get(node.parent2_uuid)
+                    ref p1_opt = registry_ptr[].get(node.parent1_uuid)
+                    ref p2_opt = registry_ptr[].get(node.parent2_uuid)
                     if p1_opt != None and p2_opt != None:
-                        var p1 = p1_opt.value()
-                        var p2 = p2_opt.value()
-                        var p2_val = p2.value
-                        var p1_val = p1.value
-                        p1.grad += p2_val * node.grad
-                        p2.grad += p1_val * node.grad
-                        registry[node.parent1_uuid] = p1
-                        registry[node.parent2_uuid] = p2
+                        var p1_entry = p1_opt.value()
+                        var p2_entry = p2_opt.value()
+                        var p2_val = p2_entry.node.value
+                        var p1_val = p1_entry.node.value
+                        registry_ptr[].add_to_grad(
+                            node.parent1_uuid, p2_val * node_grad
+                        )
+                        registry_ptr[].add_to_grad(
+                            node.parent2_uuid, p1_val * node_grad
+                        )
 
             elif node.op == Op.TANH:
                 if node.has_parent1:
-                    var p1_opt = registry.get(node.parent1_uuid)
-                    if p1_opt != None:
-                        var p1 = p1_opt.value()
-                        p1.grad += (1 - node.value**2) * node.grad
-                        registry[node.parent1_uuid] = p1
+                    registry_ptr[].add_to_grad(
+                        node.parent1_uuid, (1 - node.value**2) * node_grad
+                    )
 
             elif node.op == Op.POW:
                 if node.has_parent1 and node.has_parent2:
-                    var p1_opt = registry.get(node.parent1_uuid)
-                    var p2_opt = registry.get(node.parent2_uuid)
+                    ref p1_opt = registry_ptr[].get(node.parent1_uuid)
+                    ref p2_opt = registry_ptr[].get(node.parent2_uuid)
                     if p1_opt != None and p2_opt != None:
-                        var p1 = p1_opt.value()
-                        var p2 = p2_opt.value()
-                        p1.grad += (
-                            p2.value * p1.value ** (p2.value - 1) * node.grad
+                        var p1_entry = p1_opt.value()
+                        var p2_entry = p2_opt.value()
+                        registry_ptr[].add_to_grad(
+                            node.parent1_uuid,
+                            (
+                                p2_entry.node.value
+                                * p1_entry.node.value
+                                ** (p2_entry.node.value - 1)
+                                * node_grad
+                            ),
                         )
-                        registry[node.parent1_uuid] = p1
-
-        # Also update self's grad to match the registry
-        var self_grad_opt = registry.get(self.uuid)
-        if self_grad_opt != None:
-            self.grad = self_grad_opt.value().grad
-
-        # Update the global registry with the computed gradients
-        update_global_grads(registry)
 
     fn write_to(self, mut writer: Some[Writer]):
-        writer.write("[", self.name, "|", self.value, "|", self.grad, "]")
+        writer.write("[", self.name, "|", self.value, "|", self.get_grad(), "]")
 
 
 # ============== Global Node Registry ==============
@@ -330,66 +317,115 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
 # Consolidated here to avoid circular dependency with separate registry module
 
 
-struct _NodeRegistry(Copyable):
-    """Global registry of all nodes in the computation graph.
+struct GradEntry(ImplicitlyCopyable, Movable):
+    var grad: Float64
+    var node: Node  # Store node for traversal and gradient calculations
 
-    This struct maintains a dictionary mapping UUIDs to Nodes, allowing
-    O(1) lookup during backpropagation without requiring manual registration.
+    fn __init__(out self, grad: Float64, node: Node):
+        self.grad = grad
+        self.node = node
+
+
+comptime RegType = GradEntry
+
+
+struct GradRegistry(Copyable):
+    """Global registry of all gradients and nodes in the computation graph.
+
+    This struct maintains two dictionaries:
+    - _grads: UUID to Float64 (gradients)
+    - _nodes: UUID to Node (for traversal)
     """
 
-    var _registry: Dict[UUID, Node]
+    var _registry: Dict[UUID, RegType]
 
     fn __init__(out self):
         """Initialize an empty registry."""
-        self._registry = Dict[UUID, Node]()
+        self._registry = Dict[UUID, RegType]()
 
-    fn register(mut self, node: Node):
+    fn __getitem__(ref self, ref key: UUID) raises -> RegType:
+        """Get a gradient from the registry by UUID.
+
+        Args:
+            key: The UUID of the node to retrieve.
+
+        Returns:
+            The gradient value.
+
+        Raises:
+            KeyError: If the UUID is not found in the registry.
+        """
+        return self._registry[key].copy()
+
+    fn get(self, uuid: UUID) -> Optional[RegType]:
+        """Get an entry (grad, node_ptr) from the registry.
+
+        Args:
+            uuid: The UUID of the node to retrieve.
+
+        Returns:
+            An Optional containing the tuple if found, or None if not found.
+        """
+        return self._registry.get(uuid)
+
+    fn register(mut self, node: Node, grad: Float64):
         """Register a node in the global registry.
 
         Args:
             node: The node to register.
+            grad: The initial gradient value for the node.
         """
-        self._registry[node.uuid] = node
+        self._registry[node.uuid] = GradEntry(grad=grad, node=node)
 
-    fn get_registry_copy(self) raises -> Dict[UUID, Node]:
-        """Get a copy of the registry.
-
-        Returns:
-            A copy of the registry dictionary.
-        """
-        var result = Dict[UUID, Node]()
-        var uuids = List[UUID]()
-        for uuid in self._registry.keys():
-            uuids.append(uuid)
-        for uuid in uuids:
-            result[uuid] = self._registry[uuid]
-        return result^
-
-    fn set_grads(mut self, grads: Dict[UUID, Node]) raises:
-        """Update gradients in the registry from a copy.
+    fn add_to_grad(mut self, uuid: UUID, delta: Float64):
+        """Add a value to the gradient for a node.
 
         Args:
-            grads: A dictionary containing the updated gradients.
+            uuid: The UUID of the node.
+            delta: The value to add to the gradient.
         """
-        var uuids = List[UUID]()
-        for uuid in grads.keys():
-            uuids.append(uuid)
-        for uuid in uuids:
-            if uuid in self._registry:
-                self._registry[uuid].grad = grads[uuid].grad
+        ref entry_opt = self._registry.get(uuid)
+        if entry_opt != None:
+            var entry = entry_opt.value()
+            entry.grad += delta
+            self._registry[uuid] = entry
+
+    fn set_grad(mut self, uuid: UUID, value: Float64):
+        """Set the gradient for a node.
+
+        Args:
+            uuid: The UUID of the node.
+            value: The new gradient value.
+        """
+        ref entry_opt = self._registry.get(uuid)
+        if entry_opt != None:
+            var entry = entry_opt.value()
+            entry.grad = value
+            self._registry[uuid] = entry
+
+    fn keys(self) -> List[UUID]:
+        """Get all UUIDs in the registry.
+
+        Returns:
+            A list of UUIDs.
+        """
+        var result = List[UUID]()
+        for uuid in self._registry.keys():
+            result.append(uuid)
+        return result^
 
     fn clear(mut self):
-        """Clear all nodes from the registry."""
-        self._registry = Dict[UUID, Node]()
+        """Clear all entries from the registry."""
+        self._registry.clear()
 
 
-fn _init_node_registry() -> _NodeRegistry:
+fn _init_node_registry() -> GradRegistry:
     """Initialize the global node registry.
 
     Returns:
-        A new _NodeRegistry instance.
+        A new GradRegistry instance.
     """
-    return _NodeRegistry()
+    return GradRegistry()
 
 
 # Global node registry instance
@@ -397,7 +433,7 @@ comptime _global_registry = _Global["node_registry", _init_node_registry]
 
 
 fn _get_global_registry_ptr() -> (
-    UnsafePointer[_NodeRegistry, MutOrigin.external]
+    UnsafePointer[GradRegistry, MutOrigin.external]
 ):
     """Get the global registry pointer (internal).
 
@@ -419,12 +455,10 @@ fn _register_node(node: Node):
         node: The node to register.
     """
     var ptr = _get_global_registry_ptr()
-    ptr[].register(node)
+    ptr[].register(node, 0.0)
 
 
-fn get_global_registry_ptr() -> (
-    UnsafePointer[_NodeRegistry, MutOrigin.external]
-):
+fn get_global_registry_ptr() -> UnsafePointer[GradRegistry, MutOrigin.external]:
     """Get the global registry pointer.
 
     Returns:
@@ -435,34 +469,8 @@ fn get_global_registry_ptr() -> (
     return _get_global_registry_ptr()
 
 
-fn get_global_registry_copy() -> Dict[UUID, Node]:
-    """Get a copy of the global node registry.
-
-    Returns:
-        A copy of the global registry dictionary.
-    """
-    try:
-        var ptr = _get_global_registry_ptr()
-        return ptr[].get_registry_copy()
-    except:
-        os.abort("Failed to get global node registry copy.")
-
-
-fn update_global_grads(grads: Dict[UUID, Node]):
-    """Update gradients in the global registry.
-
-    Args:
-        grads: A dictionary containing the updated gradients.
-    """
-    try:
-        var ptr = _get_global_registry_ptr()
-        ptr[].set_grads(grads)
-    except:
-        os.abort("Failed to update global node registry gradients.")
-
-
 fn clear_global_registry():
-    """Clear all nodes from the global registry."""
+    """Clear all entries from the global registry."""
     var ptr = _get_global_registry_ptr()
     ptr[].clear()
 
