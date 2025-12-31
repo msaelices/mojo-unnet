@@ -133,7 +133,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent2=other,
         )
         _register_node(result)
-        return result
+        return result^
 
     fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
@@ -144,7 +144,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent2=other^,
         )
         _register_node(result)
-        return result
+        return result^
 
     fn __mul__(self, var other: Node) -> Node:
         """Multiply two nodes."""
@@ -155,7 +155,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent2=other^,
         )
         _register_node(result)
-        return result
+        return result^
 
     fn __pow__(self, exponent: Float64) -> Node:
         """Raise node to a power."""
@@ -165,7 +165,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent1=self,
         )
         _register_node(result)
-        return result
+        return result^
 
     fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
@@ -176,7 +176,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             parent1=self,
         )
         _register_node(result)
-        return result
+        return result^
 
     fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
