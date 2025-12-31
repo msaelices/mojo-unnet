@@ -236,8 +236,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             mut_self.grad = 1.0
             registry[self.uuid] = mut_self
 
-        print("Processing nodes for backpropagation:")
-
         for i in range(len(topo_order) - 1, -1, -1):
             var uuid = topo_order[i]
             var node_opt = registry.get(uuid)
@@ -248,8 +246,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             if node.op == Op.NONE:
                 continue
 
-            print("  Node:", node.name, "grad:", node.grad)
-
             # Calculate gradients based on operation
             if node.op == Op.ADD:
                 if node.has_parent1:
@@ -258,14 +254,12 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                         var p1 = p1_opt.value()
                         p1.grad += node.grad
                         registry[node.parent1_uuid] = p1
-                        print("    Updated", p1.name, "grad =", p1.grad)
                 if node.has_parent2:
                     var p2_opt = registry.get(node.parent2_uuid)
                     if p2_opt != None:
                         var p2 = p2_opt.value()
                         p2.grad += node.grad
                         registry[node.parent2_uuid] = p2
-                        print("    Updated", p2.name, "grad =", p2.grad)
 
             elif node.op == Op.SUB:
                 if node.has_parent1:
@@ -274,14 +268,12 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                         var p1 = p1_opt.value()
                         p1.grad += node.grad
                         registry[node.parent1_uuid] = p1
-                        print("    Updated", p1.name, "grad =", p1.grad)
                 if node.has_parent2:
                     var p2_opt = registry.get(node.parent2_uuid)
                     if p2_opt != None:
                         var p2 = p2_opt.value()
                         p2.grad -= node.grad
                         registry[node.parent2_uuid] = p2
-                        print("    Updated", p2.name, "grad =", p2.grad)
 
             elif node.op == Op.MUL:
                 if node.has_parent1 and node.has_parent2:
@@ -296,8 +288,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                         p2.grad += p1_val * node.grad
                         registry[node.parent1_uuid] = p1
                         registry[node.parent2_uuid] = p2
-                        print("    Updated", p1.name, "grad =", p1.grad)
-                        print("    Updated", p2.name, "grad =", p2.grad)
 
             elif node.op == Op.TANH:
                 if node.has_parent1:
@@ -306,7 +296,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                         var p1 = p1_opt.value()
                         p1.grad += (1 - node.value**2) * node.grad
                         registry[node.parent1_uuid] = p1
-                        print("    Updated", p1.name, "grad =", p1.grad)
 
             elif node.op == Op.POW:
                 if node.has_parent1 and node.has_parent2:
@@ -319,7 +308,6 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
                             p2.value * p1.value ** (p2.value - 1) * node.grad
                         )
                         registry[node.parent1_uuid] = p1
-                        print("    Updated", p1.name, "grad =", p1.grad)
 
         # Also update self's grad to match the registry
         var self_grad_opt = registry.get(self.uuid)
@@ -471,11 +459,8 @@ fn update_global_grads(grads: Dict[UUID, Node]):
 
 fn clear_global_registry():
     """Clear all nodes from the global registry."""
-    try:
-        var ptr = _get_global_registry_ptr()
-        ptr[].clear()
-    except:
-        os.abort()
+    var ptr = _get_global_registry_ptr()
+    ptr[].clear()
 
 
 # ============== End Global Node Registry ==============
