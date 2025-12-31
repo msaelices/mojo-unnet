@@ -23,7 +23,7 @@ fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
     return (node.name, node.value, node.grad)
 
 
-fn walk(root: Node) raises -> Tuple[List[Node], List[Edge]]:
+fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
     """Walk the computation graph and collect nodes and edges.
 
     Uses the global registry to look up parent nodes by UUID.
@@ -39,7 +39,11 @@ fn walk(root: Node) raises -> Tuple[List[Node], List[Edge]]:
     var edges = List[Edge]()
 
     # Get the global registry to look up parents
-    var registry = get_global_registry_copy()
+    var registry = Dict[UUID, Node]()
+    try:
+        registry = get_global_registry_copy()
+    except:
+        return nodes^, edges^
 
     # Stack for traversal using UUIDs
     var stack = List[UUID]()
@@ -55,26 +59,29 @@ fn walk(root: Node) raises -> Tuple[List[Node], List[Edge]]:
         if current_uuid in visited:
             continue
 
-        # Look up the node in the registry
-        if current_uuid not in registry:
+        # Look up the node in the registry (returns Optional)
+        var current_opt = registry.get(current_uuid)
+        if current_opt == None:
             continue
 
-        var current = registry[current_uuid]
+        var current = current_opt.value()
         visited.append(current_uuid)
         nodes.append(current)
 
         # Process parents using their UUIDs
         if current.has_parent1:
             var parent1_uuid = current.parent1_uuid
-            if parent1_uuid in registry:
-                var parent1 = registry[parent1_uuid]
+            var parent1_opt = registry.get(parent1_uuid)
+            if parent1_opt != None:
+                var parent1 = parent1_opt.value()
                 edges.append((parent1, current))
                 stack.append(parent1_uuid)
 
         if current.has_parent2:
             var parent2_uuid = current.parent2_uuid
-            if parent2_uuid in registry:
-                var parent2 = registry[parent2_uuid]
+            var parent2_opt = registry.get(parent2_uuid)
+            if parent2_opt != None:
+                var parent2 = parent2_opt.value()
                 edges.append((parent2, current))
                 stack.append(parent2_uuid)
 
