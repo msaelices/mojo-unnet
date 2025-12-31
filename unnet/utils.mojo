@@ -1,6 +1,7 @@
 """Utility functions for visualization and graph traversal."""
 
-from .grad import Edge, Node, Op
+import os
+from .grad import Edge, Node, Op, get_global_registry_copy
 from python import Python, PythonObject
 
 # Helper functions for graph traversal and visualization
@@ -23,48 +24,65 @@ fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
     return (node.name, node.value, node.grad)
 
 
-fn walk[op: Op = Op.NONE](root: Node) -> Tuple[List[Node], List[Edge]]:
+fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
     """Walk the computation graph and collect nodes and edges.
 
-    Parameters:
-        op: Operation type of the root node.
+    Uses the global registry to look up parent nodes by UUID.
 
     Args:
         root: The root node to start traversal from.
 
     Returns:
-        A tuple of (nodes, edges) where nodes is a list of raw node data (name, value, grad)
-        and edges is a list of (parent_id, child_id) tuples representing connections.
+        A tuple of (nodes, edges) where nodes is a list of Node objects
+        and edges is a list of (parent, child) tuples representing connections.
     """
     var nodes = List[Node]()
     var edges = List[Edge]()
-    var visited = List[Node]()
 
-    # Internal stack for traversal
-    var stack = List[Node]()
-    stack.append(root)
+    # Get the global registry to look up parents
+    var registry = get_global_registry_copy()
+
+    # Stack for traversal using UUIDs
+    var stack = List[UUID]()
+    stack.append(root.uuid)
+
+    # Track visited UUIDs
+    var visited = List[UUID]()
 
     while len(stack) > 0:
-        var current = stack.pop()
+        var current_uuid = stack.pop()
 
         # Skip if already visited
-        if current in visited:
+        if current_uuid in visited:
             continue
 
-        visited.append(current)
+        # Look up the node in the registry (returns Optional)
+        var current_opt = registry.get(current_uuid)
+        if current_opt == None:
+            continue
+
+        var current = current_opt.value()
+        visited.append(current_uuid)
         nodes.append(current)
 
-        # Process parents
-        ref parent1, parent2 = current.get_parent[0](), current.get_parent[1]()
-        if parent1:
-            edges.append((parent1.value(), current))
-            stack.append(parent1.value())
-        if parent2:
-            edges.append((parent2.value(), current))
-            stack.append(parent2.value())
+        # Process parents using their UUIDs
+        if current.has_parent1:
+            var parent1_uuid = current.parent1_uuid
+            var parent1_opt = registry.get(parent1_uuid)
+            if parent1_opt != None:
+                var parent1 = parent1_opt.value()
+                edges.append((parent1, current))
+                stack.append(parent1_uuid)
+
+        if current.has_parent2:
+            var parent2_uuid = current.parent2_uuid
+            var parent2_opt = registry.get(parent2_uuid)
+            if parent2_opt != None:
+                var parent2 = parent2_opt.value()
+                edges.append((parent2, current))
+                stack.append(parent2_uuid)
 
     return nodes^, edges^
-
 
 
 fn draw(var graph: Node) raises -> PythonObject:
@@ -75,60 +93,78 @@ fn draw(var graph: Node) raises -> PythonObject:
 
     Returns:
         A graphviz Digraph object that can be rendered or displayed.
-    """
-    var Digraph = Python.import_module("graphviz").Digraph
-    var plot = Digraph(format="svg", graph_attr={"rankdir": "LR"})
 
-    # Internal traversal using Node objects
-    var node_map = Dict[String, Tuple[String, Float64, Float64, String]]()
-    var visited = List[Node]()
-    var stack = List[Node]()
-    stack.append(graph^)
+    Note:
+        Returns an empty PythonObject if graphviz is not installed.
+        Install with: pip install graphviz
+    """
+    # Import graphviz module
+    var graphviz_module = Python.import_module("graphviz")
+
+    var Digraph = graphviz_module.Digraph
+    var plot = Digraph()
+
+    # Get the global registry to look up nodes
+    var registry = get_global_registry_copy()
+
+    # Track visited UUIDs
+    var visited = List[UUID]()
+    var stack = List[UUID]()
+    stack.append(graph.uuid)
 
     while len(stack) > 0:
-        var current = stack.pop()
-        var node_id = get_node_id(current)
+        var current_uuid = stack.pop()
 
-        if current in visited:
+        # Skip if already visited
+        if current_uuid in visited:
             continue
 
+        # Look up the node in the registry
+        var current_opt = registry.get(current_uuid)
+        if current_opt == None:
+            continue
+
+        var current = current_opt.value()
+        visited.append(current_uuid)
+
+        var node_id = get_node_id(current)
         var node_data = get_node_data(current)
         var name = node_data[0]
         var value = node_data[1]
         var grad = node_data[2]
-        var op_str = String(current.op)
-        node_map[node_id] = (name, value, grad, op_str)
+        var op = current.op
 
         # Draw this node
         var label = String(name, " | v: ", value, " | g: ", grad)
-        plot.node(name=node_id, label=label, shape="record")
+        plot.node(node_id, label)
 
         # If node has an operation, add operation node and connect it
-        if len(op_str) > 0:
+        if op:
             var op_node_id = node_id + "_op"
-            plot.node(name=op_node_id, label=op_str, shape="circle")
+            plot.node(op_node_id, String(op))
             plot.edge(op_node_id, node_id)
 
-        # Process parents and create edges
-        ref parent1 = current.get_parent[0]()
-        ref parent2 = current.get_parent[1]()
-        if parent1:
-            var parent1_node = parent1.value()
-            var parent1_id = get_node_id(parent1_node)
-            if len(op_str) > 0:
-                plot.edge(parent1_id, node_id + "_op")
-            else:
-                plot.edge(parent1_id, node_id)
-            stack.append(parent1_node)
-        if parent2:
-            var parent2_node = parent2.value()
-            var parent2_id = get_node_id(parent2_node)
-            if len(op_str) > 0:
-                plot.edge(parent2_id, node_id + "_op")
-            else:
-                plot.edge(parent2_id, node_id)
-            stack.append(parent2_node)
+        # Process parents and create edges using UUIDs
+        if current.has_parent1:
+            var parent1_uuid = current.parent1_uuid
+            var parent1_opt = registry.get(parent1_uuid)
+            if parent1_opt != None:
+                var parent1_id = String(parent1_uuid)
+                if op:
+                    plot.edge(parent1_id, node_id + "_op")
+                else:
+                    plot.edge(parent1_id, node_id)
+                stack.append(parent1_uuid)
 
-        visited.append(current^)
+        if current.has_parent2:
+            var parent2_uuid = current.parent2_uuid
+            var parent2_opt = registry.get(parent2_uuid)
+            if parent2_opt != None:
+                var parent2_id = String(parent2_uuid)
+                if op:
+                    plot.edge(parent2_id, node_id + "_op")
+                else:
+                    plot.edge(parent2_id, node_id)
+                stack.append(parent2_uuid)
 
     return plot
