@@ -59,7 +59,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         out self,
         value: Float64,
         name: String = "N/A",
-    ):
+    ) raises:
         """Initialize a node with a value and optional name."""
         self.uuid = generate_uuid()
         self.value = value
@@ -70,6 +70,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.parent2_uuid = UUID()
         self.has_parent1 = False
         self.has_parent2 = False
+        _register_node(self)
 
     fn __init__(
         out self,
@@ -94,6 +95,8 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
             self.parent2_uuid = UUID()
             self.has_parent2 = False
         self.grad = 0.0
+        # Note: don't register here - will be registered by the operator methods
+        # after construction to avoid double registration
 
     @always_inline
     fn __copyinit__(out self, other: Self):
