@@ -86,6 +86,7 @@ struct UUID(Copyable, Equatable, Hashable, Movable, Stringable, Writable):
 
     fn __hash__[H: Hasher](self, mut hasher: H):
         # Hash all bytes
+        @parameter
         for i in range(16):
             hasher.update(self.bytes[i])
 
