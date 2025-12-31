@@ -111,6 +111,15 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         self.parent2_uuid = other.parent2_uuid
         self.has_parent1 = other.has_parent1
         self.has_parent2 = other.has_parent2
+        # var call_location = __call_location()
+        # print("Copying Node:", self.uuid, self.name, "in ", call_location)
+
+    # @always_inline
+    # fn __del__(deinit self):
+    #     """Destructor for Node."""
+    #     # No special cleanup needed as UnsafePointer does not own the memory
+    #     var call_location = __call_location()
+    #     print("Deleting Node:", self.uuid, self.name, "in ", call_location)
 
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
