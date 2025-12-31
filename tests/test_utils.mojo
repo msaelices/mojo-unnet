@@ -6,6 +6,7 @@ from testing import (
     TestSuite,
 )
 
+from unnet import clear_global_registry
 from unnet.grad import Node, Op
 from unnet.utils import walk
 
@@ -73,11 +74,9 @@ def test_node_backward():
 
 def test_walk_single_node():
     """Test walk function with a single node."""
-    from unnet import clear_global_registry
-
     clear_global_registry()
     var node = Node(5.0, "x")
-    ref nodes, ref edges = walk(node)
+    ref nodes, edges = walk(node)
 
     assert_equal(len(nodes), 1)
     assert_equal(len(edges), 0)
@@ -94,7 +93,7 @@ def test_walk_simple_graph():
     var b = Node(3.0, "b")
     var c = a + b  # This should create edges from a and b to c
 
-    ref nodes, ref edges = walk(c)
+    ref nodes, edges = walk(c)
 
     # Should have 3 nodes (a, b, c)
     assert_equal(len(nodes), 3)
@@ -114,7 +113,7 @@ def test_walk_complex_graph():
     var sum_node = a + b
     var d = sum_node * c
 
-    ref nodes, ref edges = walk(d)
+    ref nodes, edges = walk(d)
 
     # Should have 5 nodes (a, b, c, sum_node, d)
     assert_equal(len(nodes), 5)
