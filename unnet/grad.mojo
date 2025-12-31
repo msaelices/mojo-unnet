@@ -370,20 +370,6 @@ struct GradRegistry(Copyable):
         """
         self._registry[node.uuid] = GradEntry(grad=grad, node=node)
 
-    fn get_grad(self, uuid: UUID) -> Optional[Float64]:
-        """Get a gradient from the registry by UUID.
-
-        Args:
-            uuid: The UUID of the node to retrieve.
-
-        Returns:
-            An Optional containing the grad if found, or None if not found.
-        """
-        ref entry_opt = self._registry.get(uuid)
-        if entry_opt != None:
-            return entry_opt.value().grad
-        return None
-
     fn add_to_grad(mut self, uuid: UUID, delta: Float64):
         """Add a value to the gradient for a node.
 
@@ -409,20 +395,6 @@ struct GradRegistry(Copyable):
             var entry = entry_opt.value().copy()
             entry.grad = value
             self._registry[uuid] = entry^
-
-    fn get_node(self, uuid: UUID) -> Optional[Node]:
-        """Get a node from the registry by UUID.
-
-        Args:
-            uuid: The UUID of the node to retrieve.
-
-        Returns:
-            An Optional containing the node if found, or None if not found.
-        """
-        ref entry_opt = self._registry.get(uuid)
-        if entry_opt != None:
-            return entry_opt.value().node
-        return None
 
     fn keys(self) -> List[UUID]:
         """Get all UUIDs in the registry.

@@ -203,38 +203,5 @@ def test_backward_multiple_uses():
     assert_equal(registry_ptr[][x_copy_uuid].grad, 3.0)
 
 
-# def test_backward_resets_gradients():
-#     """Test that backward() resets gradients before computation."""
-#     # Clear registry before test
-#     clear_global_registry()
-#
-#     var x = Node(2.0, "x")
-#     var y = Node(3.0, "y")
-#     var z = x + y
-#     z.name = "z"
-#
-#     # Get the registry and manually set some non-zero gradients
-#     var registry_ptr = get_global_registry_ptr()
-#     registry_ptr[][x.uuid].grad = 5.0
-#     registry_ptr[][y.uuid].grad = 10.0
-#     registry_ptr[][z.uuid].grad = 15.0
-#
-#     # Update the global registry with the modified gradients
-#     from unnet import update_global_grads
-#
-#     update_global_grads(registry_ptr[])
-#
-#     # Perform backpropagation - should reset gradients first
-#     z.backward()
-#
-#     # Get fresh copy to check results
-#     registry_ptr = get_global_registry_ptr()
-#
-#     # All gradients should be reset and recalculated
-#     assert_equal(registry_ptr[][z.uuid].grad, 1.0)
-#     assert_equal(registry_ptr[][x.uuid].grad, 1.0)
-#     assert_equal(registry_ptr[][y.uuid].grad, 1.0)
-
-
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()
