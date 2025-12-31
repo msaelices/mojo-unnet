@@ -61,36 +61,27 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
         if current_opt == None:
             continue
 
-        var current = current_opt.value().copy()
+        var current = current_opt.value()
         visited.append(current_uuid)
 
-        # Store parent UUIDs before transferring current
-        var parent1_uuid = current.parent1_uuid
-        var has_parent1 = current.has_parent1
-        var parent2_uuid = current.parent2_uuid
-        var has_parent2 = current.has_parent2
-
-        nodes.append(current^)
-
-        # Get the node again for edge creation (since we transferred current)
-        var child_opt = registry.get(current_uuid)
-
         # Process parents using their UUIDs
-        if has_parent1 and child_opt != None:
+        if current.has_parent1:
+            var parent1_uuid = current.parent1_uuid
             var parent1_opt = registry.get(parent1_uuid)
             if parent1_opt != None:
-                var parent1 = parent1_opt.value().copy()
-                var child = child_opt.value().copy()
-                edges.append((parent1^, child^))
+                var parent1 = parent1_opt.value()
+                edges.append((parent1, current))
                 stack.append(parent1_uuid)
 
-        if has_parent2 and child_opt != None:
+        if current.has_parent2:
+            var parent2_uuid = current.parent2_uuid
             var parent2_opt = registry.get(parent2_uuid)
             if parent2_opt != None:
-                var parent2 = parent2_opt.value().copy()
-                var child = child_opt.value().copy()
-                edges.append((parent2^, child^))
+                var parent2 = parent2_opt.value()
+                edges.append((parent2, current))
                 stack.append(parent2_uuid)
+
+        nodes.append(current)
 
     return nodes^, edges^
 
@@ -134,7 +125,7 @@ fn draw(var graph: Node) raises -> PythonObject:
         if current_opt == None:
             continue
 
-        var current = current_opt.value().copy()
+        var current = current_opt.value()
         visited.append(current_uuid)
 
         var node_id = get_node_id(current)

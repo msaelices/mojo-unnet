@@ -23,7 +23,7 @@ def test_backward_simple_addition():
     var c = Node(1.5, "c")
     var d = Node(4.0, "d")
 
-    var dplusc = d + c^
+    var dplusc = d + c
     dplusc.name = "dplusc"
     var e = dplusc + a
     e.name = "e"
@@ -57,8 +57,7 @@ def test_backward_multiplication():
 
     var x = Node(3.0, "x")
     var y = Node(4.0, "y")
-    var y_uuid = y.uuid  # Get UUID before transferring
-    var z = x * y^
+    var z = x * y
     z.name = "z"
 
     # Perform backpropagation
@@ -73,7 +72,7 @@ def test_backward_multiplication():
     # dz/dy = x = 3.0
     assert_equal(registry_ptr[][z.uuid].grad, 1.0)
     assert_equal(registry_ptr[][x.uuid].grad, 4.0)
-    assert_equal(registry_ptr[][y_uuid].grad, 3.0)
+    assert_equal(registry_ptr[][y.uuid].grad, 3.0)
 
 
 def test_backward_subtraction():
@@ -83,8 +82,7 @@ def test_backward_subtraction():
 
     var x = Node(5.0, "x")
     var y = Node(3.0, "y")
-    var y_uuid = y.uuid  # Get UUID before transferring
-    var z = x - y^
+    var z = x - y
     z.name = "z"
 
     # Perform backpropagation
@@ -99,7 +97,7 @@ def test_backward_subtraction():
     # dz/dy = -1
     assert_equal(registry_ptr[][z.uuid].grad, 1.0)
     assert_equal(registry_ptr[][x.uuid].grad, 1.0)
-    assert_equal(registry_ptr[][y_uuid].grad, -1.0)
+    assert_equal(registry_ptr[][y.uuid].grad, -1.0)
 
 
 def test_backward_tanh():
@@ -137,11 +135,9 @@ def test_backward_complex_graph():
 
     var sum = a + b
     sum.name = "sum"
-    var c_uuid = c.uuid  # Get UUID before transferring
-    var product = sum * c^
+    var product = sum * c
     product.name = "product"
-    var d_uuid = d.uuid  # Get UUID before transferring
-    var result = product - d^
+    var result = product - d
     result.name = "result"
 
     # Perform backpropagation
@@ -170,11 +166,11 @@ def test_backward_complex_graph():
 
     assert_equal(registry_ptr[][result.uuid].grad, 1.0)
     assert_equal(registry_ptr[][product.uuid].grad, 1.0)
-    assert_equal(registry_ptr[][d_uuid].grad, -1.0)
+    assert_equal(registry_ptr[][d.uuid].grad, -1.0)
     assert_equal(registry_ptr[][sum.uuid].grad, 4.0)
     assert_equal(registry_ptr[][a.uuid].grad, 4.0)
     assert_equal(registry_ptr[][b.uuid].grad, 4.0)
-    assert_equal(registry_ptr[][c_uuid].grad, 5.0)
+    assert_equal(registry_ptr[][c.uuid].grad, 5.0)
 
 
 def test_backward_multiple_uses():
@@ -185,8 +181,7 @@ def test_backward_multiple_uses():
     # x * x (using same node twice)
     var x = Node(3.0, "x")
     var x_copy = Node(3.0, "x_copy")  # Create a copy with same value
-    var x_copy_uuid = x_copy.uuid  # Get UUID before transferring
-    var y = x * x_copy^
+    var y = x * x_copy
     y.name = "y"
 
     # Perform backpropagation
@@ -200,7 +195,7 @@ def test_backward_multiple_uses():
     # dy/dx_copy = x = 3.0
     assert_equal(registry_ptr[][y.uuid].grad, 1.0)
     assert_equal(registry_ptr[][x.uuid].grad, 3.0)
-    assert_equal(registry_ptr[][x_copy_uuid].grad, 3.0)
+    assert_equal(registry_ptr[][x_copy.uuid].grad, 3.0)
 
 
 def main():

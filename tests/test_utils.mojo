@@ -30,24 +30,19 @@ def test_node_operations():
     var b = Node(3.0, "b")
 
     # Test addition
-    var c = a + b^
+    var c = a + b
     assert_equal(c.value, 5.0)
 
-    # Test subtraction - need to recreate a and b since they were consumed
-    var a2 = Node(2.0, "a")
-    var b2 = Node(3.0, "b")
-    var d = a2 - b2^
+    # Test subtraction
+    var d = a - b
     assert_equal(d.value, -1.0)
 
-    # Test multiplication - need new nodes
-    var a3 = Node(2.0, "a")
-    var b3 = Node(3.0, "b")
-    var e = a3 * b3^
+    # Test multiplication
+    var e = a * b
     assert_equal(e.value, 6.0)
 
-    # Test power - need new node
-    var a4 = Node(2.0, "a")
-    var f = a4**2.0
+    # Test power
+    var f = a**2.0
     assert_equal(f.value, 4.0)
 
 
@@ -115,8 +110,8 @@ def test_walk_complex_graph():
     var a = Node(2.0, "a")
     var b = Node(3.0, "b")
     var c = Node(4.0, "c")
-    var sum_node = a + b^
-    var d = sum_node * c^
+    var sum_node = a + b
+    var d = sum_node * c
 
     ref nodes, edges = walk(d)
 
@@ -134,7 +129,7 @@ def test_draw_single_node():
     var node = Node(5.0, "x")
     # Just verify that draw runs without error
     # More detailed testing would require graphviz inspection
-    _ = draw(node^)
+    _ = draw(node)
 
 
 def test_draw_simple_graph():
@@ -144,10 +139,10 @@ def test_draw_simple_graph():
     clear_global_registry()
     var a = Node(2.0, "a")
     var b = Node(3.0, "b")
-    var c = a + b^
+    var c = a + b
 
     # Verify draw runs without error
-    _ = draw(c^)
+    _ = draw(c)
 
 
 def main():

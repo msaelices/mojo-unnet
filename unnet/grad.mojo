@@ -46,7 +46,7 @@ struct Op(Equatable, ImplicitlyCopyable, Movable, Stringable):
         return "UnknownOp"
 
 
-struct Node(Copyable, Equatable, Movable, Writable):
+struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
@@ -216,7 +216,7 @@ struct Node(Copyable, Equatable, Movable, Writable):
                 ref entry_opt = registry_ptr[].get(uuid)
                 if entry_opt == None:
                     continue
-                var entry = entry_opt.value().copy()
+                var entry = entry_opt.value()
                 ref node = entry.node
 
                 # Check if all parents are already in topo_order
@@ -242,7 +242,7 @@ struct Node(Copyable, Equatable, Movable, Writable):
             ref entry_opt = registry_ptr[].get(uuid)
             if entry_opt == None:
                 continue
-            var entry = entry_opt.value().copy()
+            var entry = entry_opt.value()
             var node_grad = entry.grad
             ref node = entry.node
 
@@ -267,8 +267,8 @@ struct Node(Copyable, Equatable, Movable, Writable):
                     ref p1_opt = registry_ptr[].get(node.parent1_uuid)
                     ref p2_opt = registry_ptr[].get(node.parent2_uuid)
                     if p1_opt != None and p2_opt != None:
-                        var p1_entry = p1_opt.value().copy()
-                        var p2_entry = p2_opt.value().copy()
+                        var p1_entry = p1_opt.value()
+                        var p2_entry = p2_opt.value()
                         var p2_val = p2_entry.node.value
                         var p1_val = p1_entry.node.value
                         registry_ptr[].add_to_grad(
@@ -289,8 +289,8 @@ struct Node(Copyable, Equatable, Movable, Writable):
                     ref p1_opt = registry_ptr[].get(node.parent1_uuid)
                     ref p2_opt = registry_ptr[].get(node.parent2_uuid)
                     if p1_opt != None and p2_opt != None:
-                        var p1_entry = p1_opt.value().copy()
-                        var p2_entry = p2_opt.value().copy()
+                        var p1_entry = p1_opt.value()
+                        var p2_entry = p2_opt.value()
                         registry_ptr[].add_to_grad(
                             node.parent1_uuid,
                             (
@@ -310,13 +310,13 @@ struct Node(Copyable, Equatable, Movable, Writable):
 # Consolidated here to avoid circular dependency with separate registry module
 
 
-struct GradEntry(Copyable, Movable):
+struct GradEntry(ImplicitlyCopyable, Movable):
     var grad: Float64
     var node: Node  # Store node for traversal and gradient calculations
 
     fn __init__(out self, grad: Float64, node: Node):
         self.grad = grad
-        self.node = node.copy()
+        self.node = node
 
 
 comptime RegType = GradEntry
@@ -379,9 +379,9 @@ struct GradRegistry(Copyable):
         """
         ref entry_opt = self._registry.get(uuid)
         if entry_opt != None:
-            var entry = entry_opt.value().copy()
+            var entry = entry_opt.value()
             entry.grad += delta
-            self._registry[uuid] = entry^
+            self._registry[uuid] = entry
 
     fn set_grad(mut self, uuid: UUID, value: Float64):
         """Set the gradient for a node.
@@ -392,9 +392,9 @@ struct GradRegistry(Copyable):
         """
         ref entry_opt = self._registry.get(uuid)
         if entry_opt != None:
-            var entry = entry_opt.value().copy()
+            var entry = entry_opt.value()
             entry.grad = value
-            self._registry[uuid] = entry^
+            self._registry[uuid] = entry
 
     fn keys(self) -> List[UUID]:
         """Get all UUIDs in the registry.
@@ -473,7 +473,7 @@ fn get_global_nodes_dict() -> Dict[UUID, Node]:
     for uuid in registry_ptr[].keys():
         ref entry_opt = registry_ptr[].get(uuid)
         if entry_opt != None:
-            result[uuid] = entry_opt.value().node.copy()
+            result[uuid] = entry_opt.value().node
     return result^
 
 
