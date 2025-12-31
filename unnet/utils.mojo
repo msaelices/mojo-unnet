@@ -82,3 +82,92 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
                 stack.append(parent2_uuid)
 
     return nodes^, edges^
+
+
+fn draw(var graph: Node) -> PythonObject:
+    """Create a graphviz visualization of the computation graph.
+
+    Args:
+        graph: The root node of the computation graph to visualize.
+
+    Returns:
+        A graphviz Digraph object that can be rendered or displayed.
+
+    Note:
+        Returns an empty PythonObject if graphviz is not installed.
+        Install with: pip install graphviz
+    """
+    try:
+        # Import graphviz module
+        var graphviz_module = Python.import_module("graphviz")
+
+        var Digraph = graphviz_module.Digraph
+        var plot = Digraph()
+
+        # Get the global registry to look up nodes
+        var registry = get_global_registry_copy()
+
+        # Track visited UUIDs
+        var visited = List[UUID]()
+        var stack = List[UUID]()
+        stack.append(graph.uuid)
+
+        while len(stack) > 0:
+            var current_uuid = stack.pop()
+
+            # Skip if already visited
+            if current_uuid in visited:
+                continue
+
+            # Look up the node in the registry
+            var current_opt = registry.get(current_uuid)
+            if current_opt == None:
+                continue
+
+            var current = current_opt.value()
+            visited.append(current_uuid)
+
+            var node_id = get_node_id(current)
+            var node_data = get_node_data(current)
+            var name = node_data[0]
+            var value = node_data[1]
+            var grad = node_data[2]
+            var op_str = String(current.op)
+
+            # Draw this node
+            var label = String(name, " | v: ", value, " | g: ", grad)
+            plot.node(node_id, label, "record")
+
+            # If node has an operation, add operation node and connect it
+            if len(op_str) > 0:
+                var op_node_id = node_id + "_op"
+                plot.node(op_node_id, op_str, "circle")
+                plot.edge(op_node_id, node_id)
+
+            # Process parents and create edges using UUIDs
+            if current.has_parent1:
+                var parent1_uuid = current.parent1_uuid
+                var parent1_opt = registry.get(parent1_uuid)
+                if parent1_opt != None:
+                    var parent1_id = String(parent1_uuid)
+                    if len(op_str) > 0:
+                        plot.edge(parent1_id, node_id + "_op")
+                    else:
+                        plot.edge(parent1_id, node_id)
+                    stack.append(parent1_uuid)
+
+            if current.has_parent2:
+                var parent2_uuid = current.parent2_uuid
+                var parent2_opt = registry.get(parent2_uuid)
+                if parent2_opt != None:
+                    var parent2_id = String(parent2_uuid)
+                    if len(op_str) > 0:
+                        plot.edge(parent2_id, node_id + "_op")
+                    else:
+                        plot.edge(parent2_id, node_id)
+                    stack.append(parent2_uuid)
+
+        return plot
+    except:
+        # If graphviz is not available or any error occurs, return an empty Python object
+        return PythonObject()

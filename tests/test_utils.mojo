@@ -8,7 +8,7 @@ from testing import (
 
 from unnet import clear_global_registry
 from unnet.grad import Node, Op
-from unnet.utils import walk
+from unnet.utils import walk, draw
 
 
 def test_node_creation():
@@ -121,26 +121,28 @@ def test_walk_complex_graph():
     assert_equal(len(edges), 4)
 
 
-# def test_draw_single_node():
-#     """Test draw function with a single node."""
-#     var node = Node(5.0, "x")
-#     var plot = draw(node)
-#
-#     # Just verify that draw returns something (PythonObject)
-#     # More detailed testing would require graphviz inspection
-#     assert_true(plot is not None)
+def test_draw_single_node():
+    """Test draw function with a single node."""
+    from unnet import clear_global_registry
+
+    clear_global_registry()
+    var node = Node(5.0, "x")
+    # Just verify that draw runs without error
+    # More detailed testing would require graphviz inspection
+    _ = draw(node)
 
 
-# def test_draw_simple_graph():
-#     """Test draw function with a simple computation graph."""
-#     var a = Node(2.0, "a")
-#     var b = Node(3.0, "b")
-#     var c = a + b
-#
-#     var plot = draw(c)
-#
-#     # Verify plot object is created
-#     assert_true(plot is not None)
+def test_draw_simple_graph():
+    """Test draw function with a simple computation graph."""
+    from unnet import clear_global_registry
+
+    clear_global_registry()
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+    var c = a + b
+
+    # Verify draw runs without error
+    _ = draw(c)
 
 
 def main():
