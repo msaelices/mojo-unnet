@@ -9,7 +9,7 @@ from sys.ffi import _Global
 from unnet.uuid import generate_uuid, UUID
 
 
-struct Op(Equatable, Stringable, ImplicitlyCopyable & Movable):
+struct Op(Equatable, ImplicitlyCopyable, Movable, Stringable):
     comptime NONE: Int = 0
     comptime ADD: Int = 1
     comptime SUB: Int = 2
