@@ -60,7 +60,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         out self,
         value: Float64,
         name: String = "N/A",
-    ) raises:
+    ):
         """Initialize a node with a value and optional name."""
         self.uuid = generate_uuid()
         self.value = value
@@ -115,7 +115,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
 
-    fn __add__(self, ref other: Node) raises -> Node:
+    fn __add__(self, ref other: Node) -> Node:
         """Add two nodes."""
         var result = Node(
             op=Op.ADD,
@@ -126,7 +126,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         _register_node(result)
         return result
 
-    fn __sub__(self, var other: Node) raises -> Node:
+    fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
         var result = Node(
             op=Op.SUB,
@@ -137,7 +137,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         _register_node(result)
         return result
 
-    fn __mul__(self, var other: Node) raises -> Node:
+    fn __mul__(self, var other: Node) -> Node:
         """Multiply two nodes."""
         var result = Node(
             value=self.value * other.value,
@@ -148,7 +148,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         _register_node(result)
         return result
 
-    fn __pow__(self, exponent: Float64) raises -> Node:
+    fn __pow__(self, exponent: Float64) -> Node:
         """Raise node to a power."""
         var result = Node(
             value=self.value**exponent,
@@ -158,7 +158,7 @@ struct Node(ImplicitlyCopyable & Movable, Equatable, Writable):
         _register_node(result)
         return result
 
-    fn tanh(self) raises -> Node:
+    fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result_val = math.tanh(self.value)
         var result = Node(
@@ -395,7 +395,7 @@ fn _init_node_registry() -> _NodeRegistry:
 comptime _global_registry = _Global["node_registry", _init_node_registry]
 
 
-fn _get_global_registry_ptr() raises -> (
+fn _get_global_registry_ptr() -> (
     UnsafePointer[_NodeRegistry, MutOrigin.external]
 ):
     """Get the global registry pointer (internal).
@@ -403,10 +403,13 @@ fn _get_global_registry_ptr() raises -> (
     Returns:
         A pointer to the global registry.
     """
-    return _global_registry.get_or_create_ptr()
+    try:
+        return _global_registry.get_or_create_ptr()
+    except:
+        os.abort()
 
 
-fn _register_node(node: Node) raises:
+fn _register_node(node: Node):
     """Register a node in the global registry (internal).
 
     This function is called automatically when nodes are created.
@@ -418,7 +421,7 @@ fn _register_node(node: Node) raises:
     ptr[].register(node)
 
 
-fn get_global_registry_ptr() raises -> (
+fn get_global_registry_ptr() -> (
     UnsafePointer[_NodeRegistry, MutOrigin.external]
 ):
     """Get the global registry pointer.
