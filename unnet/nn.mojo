@@ -104,19 +104,30 @@ struct Layer(Copyable, Movable):
 
 
 struct NetworkMLP(Movable):
-    """A simple MLP: 2 inputs -> 2 hidden -> 1 output."""
+    """A simple MLP."""
 
+    var input_size: Int
+    var hidden_size: Int
     var layers: List[Layer]
 
-    fn __init__(out self):
-        """Initialize a 2-layer MLP with 2 inputs, 2 hidden, 1 output."""
+    fn __init__(out self, num_layers: Int, input_size: Int, hidden_size: Int):
+        """Initialize a MLP with input_size inputs, hidden_size hidden, 1 output.
+        Args:
+            num_layers: Number of hidden layers.
+            input_size: Number of input features.
+            hidden_size: Number of neurons in each hidden layer.
+        """
+        self.input_size = input_size
+        self.hidden_size = hidden_size
         self.layers = List[Layer]()
 
-        # Hidden layer: 2 neurons, 2 inputs
-        self.layers.append(Layer(2, 2))
-
-        # Output layer: 1 neuron, 2 inputs (from hidden layer)
-        self.layers.append(Layer(1, 2))
+        for i in range(num_layers):
+            if i == 0:
+                # First hidden layer: hidden_size neurons, input_size inputs
+                self.layers.append(Layer(hidden_size, input_size))
+            else:
+                # Subsequent hidden layers: hidden_size neurons, hidden_size inputs
+                self.layers.append(Layer(hidden_size, hidden_size))
 
     fn __call__(self, inputs: List[Float64]) -> Node:
         """Forward pass through the network.

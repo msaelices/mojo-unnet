@@ -62,17 +62,17 @@ def test_network_creation():
     """Test that a NetworkMLP can be created."""
     clear_global_registry()
 
-    var net = NetworkMLP()
+    var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
     var params = net.parameters()
-    # Hidden: 2 * 3 = 6, Output: 1 * 3 = 3, Total: 9
-    assert_equal(len(params), 9)
+    # Hidden: 2 * 3 = 6, Hidden: 2 * 3 = 6 => Total = 12
+    assert_equal(len(params), 12)
 
 
 def test_network_forward_pass():
     """Test the forward pass through a network."""
     clear_global_registry()
 
-    var net = NetworkMLP()
+    var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
     var output = net([1.0, 2.0])
 
     assert_true(output.value >= -1.0)
@@ -83,7 +83,7 @@ def test_network_backward_pass():
     """Test backward pass through the network."""
     clear_global_registry()
 
-    var net = NetworkMLP()
+    var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
     var output = net([1.0, 1.0])
     output.backward()
 
@@ -102,7 +102,7 @@ def test_network_zero_grads():
     """Test zeroing gradients in the network."""
     clear_global_registry()
 
-    var net = NetworkMLP()
+    var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
     var output = net([1.0, 1.0])
     output.backward()
 
