@@ -6,13 +6,14 @@ This is a pure Mojo implementation inspired by [unnet](https://github.com/yourus
 
 ## Implementation Status
 
-This project provides scaffolding with empty implementations. The following components need to be implemented:
-
 ### `grad.mojo` - Autograd
-- [ ] Node struct with computation graph tracking
-- [ ] Operator overloading (+, -, *, ^)
-- [ ] Activation functions (tanh)
-- [ ] Backward propagation
+- [x] Node struct with computation graph tracking
+- [x] Operator overloading (+, -, *, ^)
+- [x] Activation functions (tanh)
+- [x] Backward propagation
+- [x] Graph traversal (walk, walk_topo)
+- [x] Gradient zeroing (zero_grad)
+- [x] Global registry for gradient storage
 
 ### `nn.mojo` - Neural Network Components
 - [ ] Neuron struct (weights, bias, forward pass)
@@ -21,15 +22,25 @@ This project provides scaffolding with empty implementations. The following comp
 - [ ] Training loop with gradient descent
 
 ### `utils.mojo` - Utilities
-- [ ] Graph traversal (walk)
-- [ ] Visualization helpers
+- [x] Graph traversal (walk)
+- [x] Visualization helpers (draw with graphviz)
+- [x] Node data extraction helpers
+
+### `uuid.mojo` - UUID Generation
+- [x] UUID struct for node identification
+- [x] UUID generation and comparison
 
 ## Features
 
 - **Pure Mojo**: Entire codebase written in Mojo for maximum performance
 - **Educational**: Clear, simple implementation for learning neural network fundamentals
-- **Autograd**: Automatic differentiation for backpropagation
+- **Autograd**: Automatic differentiation with full backpropagation support
 - **Computational Graph**: Node-based computation graph with gradient tracking
+- **Operator Overloading**: Natural syntax for math operations (`+`, `-`, `*`, `^`)
+- **Activation Functions**: Built-in tanh activation with proper gradients
+- **Graph Traversal**: Walk the computation graph (both DFS and topological order)
+- **Visualization**: Graphviz integration for computation graph visualization
+- **Global Registry**: Centralized gradient storage and node management
 
 ## Installation
 
@@ -51,26 +62,62 @@ pixi install
 
 ## Usage
 
+### Basic Autograd Example
+
+```mojo
+from unnet import Node, clear_global_registry
+
+# Clear the registry before starting
+clear_global_registry()
+
+# Create input nodes (leaf nodes)
+var a = Node(2.0, "a")
+var b = Node(-3.0, "b")
+var c = Node(10.0, "c")
+
+# Build computation graph: d = a * b + c
+var d = a * b
+d.name = "d"
+var e = d + c
+e.name = "e"
+
+# Forward pass: compute value
+print(e.value)  # 4.0
+
+# Backward pass: compute gradients
+e.backward()
+
+# Access gradients
+print(a.get_grad())  # -3.0 (de/da = b = -3.0)
+print(b.get_grad())  # 2.0 (de/db = a = 2.0)
+print(c.get_grad())  # 1.0
+```
+
+### Neural Network Example
+
 ```mojo
 from unnet import Network
 
-# TODO: Add usage example once implementation is complete
-fn main():
-    print("mojo-unnet - Neural networks in pure Mojo!")
+# TODO: Neural network components not yet implemented
+# This section will be updated once Neuron, Layer, and Network are implemented
 ```
 
 ## Project Structure
 
 ```
 mojo-unnet/
-├── unnet/          # Main package (pure Mojo)
+├── unnet/               # Main package (pure Mojo)
 │   ├── __init__.mojo    # Package initialization
-│   ├── grad.mojo        # Autograd implementation (Node struct)
-│   ├── nn.mojo          # Neural network components (Neuron, Layer, Network)
-│   └── utils.mojo       # Utilities (graph traversal, visualization)
+│   ├── grad.mojo        # Autograd implementation (Node, Op, GradRegistry)
+│   ├── uuid.mojo        # UUID generation and comparison
+│   ├── nn.mojo          # Neural network components (Neuron, Layer, Network) - TODO
+│   └── utils.mojo       # Utilities (graph traversal, graphviz visualization)
 ├── tests/               # Test suite (Mojo tests)
+│   ├── test_grad.mojo   # Tests for autograd (12 tests, all passing)
+│   └── test_utils.mojo  # Tests for utilities (9 tests, all passing)
 ├── .github/workflows/   # CI/CD
-└── pyproject.toml       # Project configuration
+├── pyproject.toml       # Project configuration
+└── pixi.toml            # Pixi package manager configuration
 ```
 
 ## Development
@@ -104,6 +151,29 @@ pixi run pre-commit run --all-files
 # Build Mojo package
 pixi run mojo package unnet -o unnet.mojopkg
 ```
+
+### Testing
+
+```bash
+# Run all tests
+pixi run test
+
+# Run specific test file
+mojo -I . tests/test_grad.mojo
+mojo -I . tests/test_utils.mojo
+```
+
+Current test status:
+- **test_grad.mojo**: 12 tests, all passing
+  - Basic operations (add, multiply, subtract, tanh)
+  - Complex graph backpropagation
+  - Gradient accumulation
+  - Graph traversal (walk, walk_topo)
+  - Gradient zeroing
+- **test_utils.mojo**: 9 tests, all passing
+  - Node creation and operations
+  - Graph traversal (walk)
+  - Graph visualization (draw)
 
 
 ## Contributing
