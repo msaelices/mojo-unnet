@@ -353,5 +353,135 @@ def test_node_walk():
     assert_true(d.uuid in visited)
 
 
+def test_walk_topo_simple_graph():
+    """Test that walk_topo() returns nodes in topological order (inputs first).
+    """
+    # Clear registry before test
+    clear_global_registry()
+
+    # Build graph: ((a + b) * c) - d
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+    var c = Node(4.0, "c")
+    var d = Node(1.0, "d")
+
+    var sum = a + b
+    sum.name = "sum"
+    var product = sum * c
+    product.name = "product"
+    var result = product - d
+    result.name = "result"
+
+    # Get topological order
+    var topo = result.walk_topo()
+
+    # Should contain all 7 nodes
+    assert_equal(len(topo), 7)
+
+    # In topological order, inputs (leaves) come before outputs
+    # a and b are leaves (no parents)
+    # sum = a + b
+    # product = sum * c
+    # result = product - d
+
+    # Find indices
+    var idx_a = 0
+    var idx_b = 0
+    var idx_c = 0
+    var idx_d = 0
+    var idx_sum = 0
+    var idx_product = 0
+    var idx_result = 0
+
+    for i in range(len(topo)):
+        if topo[i] == a.uuid:
+            idx_a = i
+        if topo[i] == b.uuid:
+            idx_b = i
+        if topo[i] == c.uuid:
+            idx_c = i
+        if topo[i] == d.uuid:
+            idx_d = i
+        if topo[i] == sum.uuid:
+            idx_sum = i
+        if topo[i] == product.uuid:
+            idx_product = i
+        if topo[i] == result.uuid:
+            idx_result = i
+
+    # Verify topological ordering constraints:
+    # - a and b must come before sum
+    assert_true(idx_a < idx_sum)
+    assert_true(idx_b < idx_sum)
+    # - sum and c must come before product
+    assert_true(idx_sum < idx_product)
+    assert_true(idx_c < idx_product)
+    # - product and d must come before result
+    assert_true(idx_product < idx_result)
+    assert_true(idx_d < idx_result)
+
+
+def test_walk_topo_chain():
+    """Test walk_topo() with a simple linear chain."""
+    # Clear registry before test
+    clear_global_registry()
+
+    # Build chain: e = d + c + a
+    var a = Node(2.0, "a")
+    var c = Node(1.5, "c")
+    var d = Node(4.0, "d")
+
+    var dplusc = d + c
+    dplusc.name = "dplusc"
+    var e = dplusc + a
+    e.name = "e"
+
+    # Get topological order
+    var topo = e.walk_topo()
+
+    # Should contain all 5 nodes
+    assert_equal(len(topo), 5)
+
+    # Find indices
+    var idx_a = 0
+    var idx_c = 0
+    var idx_d = 0
+    var idx_dplusc = 0
+    var idx_e = 0
+
+    for i in range(len(topo)):
+        if topo[i] == a.uuid:
+            idx_a = i
+        if topo[i] == c.uuid:
+            idx_c = i
+        if topo[i] == d.uuid:
+            idx_d = i
+        if topo[i] == dplusc.uuid:
+            idx_dplusc = i
+        if topo[i] == e.uuid:
+            idx_e = i
+
+    # Verify ordering: leaves before intermediate before root
+    assert_true(idx_a < idx_e)
+    assert_true(idx_c < idx_dplusc)
+    assert_true(idx_d < idx_dplusc)
+    assert_true(idx_dplusc < idx_e)
+
+
+def test_walk_topo_single_node():
+    """Test walk_topo() with a single node (leaf)."""
+    # Clear registry before test
+    clear_global_registry()
+
+    var a = Node(2.0, "a")
+
+    # Get topological order
+    var topo = a.walk_topo()
+
+    # Should contain only this node
+    assert_equal(len(topo), 1)
+    assert_equal(topo[0], a.uuid)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()

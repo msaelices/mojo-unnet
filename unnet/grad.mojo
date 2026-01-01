@@ -232,24 +232,17 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
 
         return visited^
 
-    fn zero_grad(mut self):
-        """Zero out gradients for all nodes reachable from this node.
+    fn walk_topo(self) -> List[UUID]:
+        """Walk the computation graph and return nodes in topological order.
 
-        Traverses the computation graph starting from this node and sets
-        gradients to 0.0 until reaching leaf nodes (nodes with no parents).
-        """
-        var visited = self.walk()
-        var registry_ptr = get_global_registry_ptr()
-        registry_ptr[].zero_grads(visited)
+        Traverses the computation graph starting from this node and returns
+        a list of UUIDs in topological order (inputs/leaves first, then outputs).
+        This is the order needed for backpropagation where gradients flow
+        from outputs backwards to inputs.
 
-    fn backward(mut self):
-        """Compute gradients via backpropagation using the global registry.
-
-        The registry stores GradEntry(grad, node) for each UUID.
-
-        Note: This does NOT reset gradients before computation.
-        Call zero_grad() explicitly before backward() if needed,
-        similar to PyTorch's behavior.
+        Returns:
+            A list of UUIDs for all nodes reachable from this node,
+            ordered from leaves to root (inputs first, then outputs).
         """
         var registry_ptr = get_global_registry_ptr()
 
@@ -260,7 +253,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         var topo_order = List[UUID]()
         var visited = List[UUID]()
 
-        # Build topological order iteratively
+        # Build topological order iteratively (Kahn's algorithm variant)
         var added = True
         while added:
             added = False
@@ -287,6 +280,32 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
                     visited.append(uuid)
                     topo_order.append(uuid)
                     added = True
+
+        return topo_order^
+
+    fn zero_grad(mut self):
+        """Zero out gradients for all nodes reachable from this node.
+
+        Traverses the computation graph starting from this node and sets
+        gradients to 0.0 until reaching leaf nodes (nodes with no parents).
+        """
+        var visited = self.walk()
+        var registry_ptr = get_global_registry_ptr()
+        registry_ptr[].zero_grads(visited)
+
+    fn backward(mut self):
+        """Compute gradients via backpropagation using the global registry.
+
+        The registry stores GradEntry(grad, node) for each UUID.
+
+        Note: This does NOT reset gradients before computation.
+        Call zero_grad() explicitly before backward() if needed,
+        similar to PyTorch's behavior.
+        """
+        var registry_ptr = get_global_registry_ptr()
+
+        # Get nodes in topological order (inputs first, then outputs)
+        var topo_order = self.walk_topo()
 
         # Process in reverse order (outputs to inputs)
         # First, set the gradient for self in the registry
