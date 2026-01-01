@@ -77,9 +77,7 @@ var c = Node(10.0, "c")
 
 # Build computation graph: d = a * b + c
 var d = a * b
-d.name = "d"
 var e = d + c
-e.name = "e"
 
 # Forward pass: compute value
 print(e.value)  # 4.0
@@ -106,7 +104,7 @@ from unnet import Network
 
 ```
 mojo-unnet/
-├── unnet/               # Main package (pure Mojo)
+├── unnet/               # Main package
 │   ├── __init__.mojo    # Package initialization
 │   ├── grad.mojo        # Autograd implementation (Node, Op, GradRegistry)
 │   ├── uuid.mojo        # UUID generation and comparison
@@ -120,65 +118,9 @@ mojo-unnet/
 └── pixi.toml            # Pixi package manager configuration
 ```
 
-## Development
-
-### Setup Development Environment
-
-```bash
-# Install all dependencies including dev tools
-pixi install
-
-# Install pre-commit hooks
-pixi run pre-commit install
-```
-
-### Code Quality
-
-```bash
-# Format Mojo files
-pixi run mojo format unnet/
-
-# Check formatting
-pixi run mojo format --check unnet/
-
-# Run all pre-commit checks
-pixi run pre-commit run --all-files
-```
-
-### Building
-
-```bash
-# Build Mojo package
-pixi run mojo package unnet -o unnet.mojopkg
-```
-
-### Testing
-
-```bash
-# Run all tests
-pixi run test
-
-# Run specific test file
-mojo -I . tests/test_grad.mojo
-mojo -I . tests/test_utils.mojo
-```
-
-Current test status:
-- **test_grad.mojo**: 12 tests, all passing
-  - Basic operations (add, multiply, subtract, tanh)
-  - Complex graph backpropagation
-  - Gradient accumulation
-  - Graph traversal (walk, walk_topo)
-  - Gradient zeroing
-- **test_utils.mojo**: 9 tests, all passing
-  - Node creation and operations
-  - Graph traversal (walk)
-  - Graph visualization (draw)
-
-
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and code quality guidelines.
 
 ## License
 
