@@ -194,6 +194,15 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
             return entry_opt.value().grad
         return 0.0
 
+    fn clear_grads(mut self):
+        """Zero out gradients for all nodes reachable from this node.
+
+        Traverses the computation graph starting from this node and sets
+        gradients to 0.0 until reaching leaf nodes (nodes with no parents).
+        """
+        var registry_ptr = get_global_registry_ptr()
+        registry_ptr[].clear_grads(self.uuid)
+
     fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
 
@@ -418,6 +427,44 @@ struct GradRegistry(Copyable):
         """Clear all entries from the registry."""
         self._registry.clear()
 
+    fn clear_grads(mut self, root_uuid: UUID):
+        """Zero out gradients for all nodes reachable from root.
+
+        Traverses the computation graph starting from root_uuid and sets
+        gradients to 0.0 until reaching leaf nodes (nodes with no parents).
+
+        Args:
+            root_uuid: The UUID of the root node to start clearing from.
+        """
+        var visited = List[UUID]()
+        var stack = List[UUID]()
+        stack.append(root_uuid)
+
+        while len(stack) > 0:
+            var uuid = stack.pop()
+
+            # Skip if already visited
+            if uuid in visited:
+                continue
+
+            # Get the entry from registry
+            ref entry_opt = self._registry.get(uuid)
+            if entry_opt == None:
+                continue
+
+            var entry = entry_opt.value()
+            visited.append(uuid)
+
+            # Zero out the gradient
+            self.set_grad(uuid, 0.0)
+
+            # Continue traversing to parents (towards leaf nodes)
+            ref node = entry.node
+            if node.has_parent1:
+                stack.append(node.parent1_uuid)
+            if node.has_parent2:
+                stack.append(node.parent2_uuid)
+
 
 fn _init_node_registry() -> GradRegistry:
     """Initialize the global node registry.
@@ -473,6 +520,19 @@ fn clear_global_registry():
     """Clear all entries from the global registry."""
     var ptr = _get_global_registry_ptr()
     ptr[].clear()
+
+
+fn clear_grads_from(root_uuid: UUID):
+    """Zero out gradients for all nodes reachable from root.
+
+    Traverses the computation graph starting from root_uuid and sets
+    gradients to 0.0 until reaching leaf nodes (nodes with no parents).
+
+    Args:
+        root_uuid: The UUID of the root node to start clearing from.
+    """
+    var ptr = _get_global_registry_ptr()
+    ptr[].clear_grads(root_uuid)
 
 
 # ============== End Global Node Registry ==============
