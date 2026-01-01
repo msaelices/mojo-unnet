@@ -311,8 +311,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         # First, set the gradient for self in the registry
         registry_ptr[].set_grad(self.uuid, 1.0)
 
-        for i in range(len(topo_order) - 1, -1, -1):
-            var uuid = topo_order[i]
+        for uuid in reversed(topo_order):
             ref entry_opt = registry_ptr[].get(uuid)
             if entry_opt == None:
                 continue
