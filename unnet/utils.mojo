@@ -65,16 +65,16 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
         visited.append(current_uuid)
 
         # Process parents using their UUIDs
-        if current.has_parent1:
-            var parent1_uuid = current.parent1_uuid
+        if current.parent1_uuid != None:
+            var parent1_uuid = current.parent1_uuid.value()
             var parent1_opt = registry_ptr[].get(parent1_uuid)
             if parent1_opt != None:
                 var parent1 = parent1_opt.value().node
                 edges.append((parent1, current))
                 stack.append(parent1_uuid)
 
-        if current.has_parent2:
-            var parent2_uuid = current.parent2_uuid
+        if current.parent2_uuid != None:
+            var parent2_uuid = current.parent2_uuid.value()
             var parent2_opt = registry_ptr[].get(parent2_uuid)
             if parent2_opt != None:
                 var parent2 = parent2_opt.value().node
@@ -146,8 +146,8 @@ fn draw(var graph: Node) raises -> PythonObject:
             plot.edge(op_node_id, node_id)
 
         # Process parents and create edges using UUIDs
-        if current.has_parent1:
-            var parent1_uuid = current.parent1_uuid
+        if current.parent1_uuid != None:
+            var parent1_uuid = current.parent1_uuid.value()
             var parent1_opt = registry_ptr[].get(parent1_uuid)
             if parent1_opt != None:
                 var parent1_id = String(parent1_uuid)
@@ -157,8 +157,8 @@ fn draw(var graph: Node) raises -> PythonObject:
                     plot.edge(parent1_id, node_id)
                 stack.append(parent1_uuid)
 
-        if current.has_parent2:
-            var parent2_uuid = current.parent2_uuid
+        if current.parent2_uuid != None:
+            var parent2_uuid = current.parent2_uuid.value()
             var parent2_opt = registry_ptr[].get(parent2_uuid)
             if parent2_opt != None:
                 var parent2_id = String(parent2_uuid)
