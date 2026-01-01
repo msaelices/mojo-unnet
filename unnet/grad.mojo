@@ -253,6 +253,9 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         """
         var registry_ptr = get_global_registry_ptr()
 
+        # Get all nodes reachable from self
+        var reachable = self.walk()
+
         # Collect nodes in topological order (inputs first, then outputs)
         var topo_order = List[UUID]()
         var visited = List[UUID]()
@@ -261,7 +264,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         var added = True
         while added:
             added = False
-            for uuid in registry_ptr[].keys():
+            for uuid in reachable:
                 if uuid in visited:
                     continue
 
