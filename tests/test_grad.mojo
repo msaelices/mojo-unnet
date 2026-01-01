@@ -1,5 +1,6 @@
 from testing import (
     assert_equal,
+    assert_false,
     assert_true,
     TestSuite,
 )
@@ -11,6 +12,18 @@ from unnet import (
     clear_global_registry,
     get_global_registry_ptr,
 )
+
+
+def test_node_implicit_init():
+    """Test that a Node can be created implicitly from a Float64."""
+    clear_global_registry()
+
+    var n: Node = 4.0
+    assert_equal(n.value, 4.0)
+    assert_equal(n.name, "N/A")
+    assert_true(n.op == Op.NONE)
+    assert_false(n.parent1_uuid)
+    assert_false(n.parent2_uuid)
 
 
 def test_backward_simple_addition():

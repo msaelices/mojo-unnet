@@ -58,6 +58,20 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     var parent1_uuid: Optional[UUID]
     var parent2_uuid: Optional[UUID]
 
+    @implicit
+    fn __init__(
+        out self,
+        value: Float64,
+    ):
+        """Initialize a node with a value and optional name."""
+        self.uuid = generate_uuid()
+        self.value = value
+        self.name = "N/A"
+        self.op = Op.NONE
+        self.parent1_uuid = None
+        self.parent2_uuid = None
+        _register_node(self)
+
     fn __init__(
         out self,
         value: Float64,
