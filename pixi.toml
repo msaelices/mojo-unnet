@@ -23,7 +23,7 @@ ipykernel = ">=6.25.0"
 pre-commit = ">=3.0.0"
 
 [tasks]
-test = "mojo test -I ./unnet tests/"
+test = "mojo -I . tests/test_backward.mojo && mojo -I . tests/test_utils.mojo"
 
 [environments]
 default = { solve-group = "default" }
