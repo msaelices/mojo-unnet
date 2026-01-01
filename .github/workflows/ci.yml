@@ -20,6 +20,32 @@ jobs:
       - name: Run pre-commit checks
         run: pixi run -e dev pre-commit run --all-files
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Modular directory
+        uses: actions/cache@v4
+        with:
+          path: /tmp/modular/
+          key: modular-${{ hashFiles('pixi.lock') }}
+          restore-keys: |
+            modular-
+
+      - name: Install pixi
+        uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          activate-environment: true
+
+      - name: Install dependencies
+        run: pixi install
+
+      - name: Run tests
+        env:
+          MODULAR_HOME: /tmp/modular/
+        run: pixi run test
+
   build:
     runs-on: ubuntu-latest
 
