@@ -55,10 +55,8 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     var op: Op
     var name: String
     # Store parent UUIDs to avoid recursive type
-    var parent1_uuid: UUID
-    var parent2_uuid: UUID
-    var has_parent1: Bool
-    var has_parent2: Bool
+    var parent1_uuid: Optional[UUID]
+    var parent2_uuid: Optional[UUID]
 
     fn __init__(
         out self,
@@ -70,10 +68,8 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         self.value = value
         self.name = name
         self.op = Op.NONE
-        self.parent1_uuid = UUID()
-        self.parent2_uuid = UUID()
-        self.has_parent1 = False
-        self.has_parent2 = False
+        self.parent1_uuid = None
+        self.parent2_uuid = None
         _register_node(self)
 
     fn __init__(
@@ -91,13 +87,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         self.name = name
         # Store parent UUIDs
         self.parent1_uuid = parent1_uuid
-        self.has_parent1 = True
-        if parent2_uuid:
-            self.parent2_uuid = parent2_uuid.value()
-            self.has_parent2 = True
-        else:
-            self.parent2_uuid = UUID()
-            self.has_parent2 = False
+        self.parent2_uuid = parent2_uuid
         # Note: don't register here - will be registered by the operator methods
         # after construction to avoid double registration
 
@@ -110,8 +100,6 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         self.name = other.name
         self.parent1_uuid = other.parent1_uuid
         self.parent2_uuid = other.parent2_uuid
-        self.has_parent1 = other.has_parent1
-        self.has_parent2 = other.has_parent2
         # var call_location = __call_location()
         # print("Copying Node:", self.uuid, self.name, "in ", call_location)
 
@@ -190,7 +178,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         """Get the gradient of this node."""
         var registry_ptr = get_global_registry_ptr()
         ref entry_opt = registry_ptr[].get(self.uuid)
-        if entry_opt != None:
+        if entry_opt:
             return entry_opt.value().grad
         return 0.0
 
@@ -218,17 +206,17 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
             # Get the node from registry
             var registry_ptr = get_global_registry_ptr()
             ref entry_opt = registry_ptr[].get(uuid)
-            if entry_opt == None:
+            if not entry_opt:
                 continue
 
             visited.append(uuid)
 
             # Continue traversing to parents (towards leaf nodes)
             ref node = entry_opt.value().node
-            if node.has_parent1:
-                stack.append(node.parent1_uuid)
-            if node.has_parent2:
-                stack.append(node.parent2_uuid)
+            if node.parent1_uuid:
+                stack.append(node.parent1_uuid.value())
+            if node.parent2_uuid:
+                stack.append(node.parent2_uuid.value())
 
         return visited^
 
@@ -262,18 +250,18 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
                     continue
 
                 ref entry_opt = registry_ptr[].get(uuid)
-                if entry_opt == None:
+                if not entry_opt:
                     continue
                 var entry = entry_opt.value()
                 ref node = entry.node
 
                 # Check if all parents are already in topo_order
                 var parents_ready = True
-                if node.has_parent1:
-                    if node.parent1_uuid not in topo_order:
+                if node.parent1_uuid:
+                    if node.parent1_uuid.value() not in topo_order:
                         parents_ready = False
-                if parents_ready and node.has_parent2:
-                    if node.parent2_uuid not in topo_order:
+                if parents_ready and node.parent2_uuid:
+                    if node.parent2_uuid.value() not in topo_order:
                         parents_ready = False
 
                 if parents_ready:
@@ -313,7 +301,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
 
         for uuid in reversed(topo_order):
             ref entry_opt = registry_ptr[].get(uuid)
-            if entry_opt == None:
+            if not entry_opt:
                 continue
             var entry = entry_opt.value()
             var node_grad = entry.grad
@@ -324,48 +312,57 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
 
             # Calculate gradients based on operation
             if node.op == Op.ADD:
-                if node.has_parent1:
-                    registry_ptr[].add_to_grad(node.parent1_uuid, node_grad)
-                if node.has_parent2:
-                    registry_ptr[].add_to_grad(node.parent2_uuid, node_grad)
+                if node.parent1_uuid:
+                    registry_ptr[].add_to_grad(
+                        node.parent1_uuid.value(), node_grad
+                    )
+                if node.parent2_uuid:
+                    registry_ptr[].add_to_grad(
+                        node.parent2_uuid.value(), node_grad
+                    )
 
             elif node.op == Op.SUB:
-                if node.has_parent1:
-                    registry_ptr[].add_to_grad(node.parent1_uuid, node_grad)
-                if node.has_parent2:
-                    registry_ptr[].add_to_grad(node.parent2_uuid, -node_grad)
+                if node.parent1_uuid:
+                    registry_ptr[].add_to_grad(
+                        node.parent1_uuid.value(), node_grad
+                    )
+                if node.parent2_uuid:
+                    registry_ptr[].add_to_grad(
+                        node.parent2_uuid.value(), -node_grad
+                    )
 
             elif node.op == Op.MUL:
-                if node.has_parent1 and node.has_parent2:
-                    ref p1_opt = registry_ptr[].get(node.parent1_uuid)
-                    ref p2_opt = registry_ptr[].get(node.parent2_uuid)
-                    if p1_opt != None and p2_opt != None:
+                if node.parent1_uuid and node.parent2_uuid:
+                    ref p1_opt = registry_ptr[].get(node.parent1_uuid.value())
+                    ref p2_opt = registry_ptr[].get(node.parent2_uuid.value())
+                    if p1_opt and p2_opt:
                         var p1_entry = p1_opt.value()
                         var p2_entry = p2_opt.value()
                         var p2_val = p2_entry.node.value
                         var p1_val = p1_entry.node.value
                         registry_ptr[].add_to_grad(
-                            node.parent1_uuid, p2_val * node_grad
+                            node.parent1_uuid.value(), p2_val * node_grad
                         )
                         registry_ptr[].add_to_grad(
-                            node.parent2_uuid, p1_val * node_grad
+                            node.parent2_uuid.value(), p1_val * node_grad
                         )
 
             elif node.op == Op.TANH:
-                if node.has_parent1:
+                if node.parent1_uuid:
                     registry_ptr[].add_to_grad(
-                        node.parent1_uuid, (1 - node.value**2) * node_grad
+                        node.parent1_uuid.value(),
+                        (1 - node.value**2) * node_grad,
                     )
 
             elif node.op == Op.POW:
-                if node.has_parent1 and node.has_parent2:
-                    ref p1_opt = registry_ptr[].get(node.parent1_uuid)
-                    ref p2_opt = registry_ptr[].get(node.parent2_uuid)
-                    if p1_opt != None and p2_opt != None:
+                if node.parent1_uuid and node.parent2_uuid:
+                    ref p1_opt = registry_ptr[].get(node.parent1_uuid.value())
+                    ref p2_opt = registry_ptr[].get(node.parent2_uuid.value())
+                    if p1_opt and p2_opt:
                         var p1_entry = p1_opt.value()
                         var p2_entry = p2_opt.value()
                         registry_ptr[].add_to_grad(
-                            node.parent1_uuid,
+                            node.parent1_uuid.value(),
                             (
                                 p2_entry.node.value
                                 * p1_entry.node.value
@@ -451,7 +448,7 @@ struct GradRegistry(Copyable):
             delta: The value to add to the gradient.
         """
         ref entry_opt = self._registry.get(uuid)
-        if entry_opt != None:
+        if entry_opt:
             var entry = entry_opt.value()
             entry.grad += delta
             self._registry[uuid] = entry
@@ -464,7 +461,7 @@ struct GradRegistry(Copyable):
             value: The new gradient value.
         """
         ref entry_opt = self._registry.get(uuid)
-        if entry_opt != None:
+        if entry_opt:
             var entry = entry_opt.value()
             entry.grad = value
             self._registry[uuid] = entry
