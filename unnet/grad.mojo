@@ -194,14 +194,53 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
             return entry_opt.value().grad
         return 0.0
 
+    fn walk(self) -> List[UUID]:
+        """Walk the computation graph from this node to leaf nodes.
+
+        Traverses the computation graph starting from this node and returns
+        a list of visited UUIDs, stopping at leaf nodes (nodes with no parents).
+
+        Returns:
+            A list of UUIDs for all nodes reachable from this node,
+            ordered from root to leaves (this node's UUID is first).
+        """
+        var visited = List[UUID]()
+        var stack = List[UUID]()
+        stack.append(self.uuid)
+
+        while len(stack) > 0:
+            var uuid = stack.pop()
+
+            # Skip if already visited
+            if uuid in visited:
+                continue
+
+            # Get the node from registry
+            var registry_ptr = get_global_registry_ptr()
+            ref entry_opt = registry_ptr[].get(uuid)
+            if entry_opt == None:
+                continue
+
+            visited.append(uuid)
+
+            # Continue traversing to parents (towards leaf nodes)
+            ref node = entry_opt.value().node
+            if node.has_parent1:
+                stack.append(node.parent1_uuid)
+            if node.has_parent2:
+                stack.append(node.parent2_uuid)
+
+        return visited^
+
     fn zero_grad(mut self):
         """Zero out gradients for all nodes reachable from this node.
 
         Traverses the computation graph starting from this node and sets
         gradients to 0.0 until reaching leaf nodes (nodes with no parents).
         """
+        var visited = self.walk()
         var registry_ptr = get_global_registry_ptr()
-        registry_ptr[].zero_grad(self.uuid)
+        registry_ptr[].zero_grads(visited)
 
     fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
@@ -424,42 +463,14 @@ struct GradRegistry(Copyable):
         """Clear all entries from the registry."""
         self._registry.clear()
 
-    fn zero_grad(mut self, root_uuid: UUID):
-        """Zero out gradients for all nodes reachable from root.
-
-        Traverses the computation graph starting from root_uuid and sets
-        gradients to 0.0 until reaching leaf nodes (nodes with no parents).
+    fn zero_grads(mut self, uuids: List[UUID]):
+        """Zero out gradients for all nodes in the given list.
 
         Args:
-            root_uuid: The UUID of the root node to start clearing from.
+            uuids: A list of UUIDs whose gradients should be set to 0.0.
         """
-        var visited = List[UUID]()
-        var stack = List[UUID]()
-        stack.append(root_uuid)
-
-        while len(stack) > 0:
-            var uuid = stack.pop()
-
-            # Skip if already visited
-            if uuid in visited:
-                continue
-
-            # Get the entry from registry
-            ref entry_opt = self._registry.get(uuid)
-            if entry_opt == None:
-                continue
-
-            visited.append(uuid)
-
-            # Zero out the gradient
+        for uuid in uuids:
             self.set_grad(uuid, 0.0)
-
-            # Continue traversing to parents (towards leaf nodes)
-            ref node = entry_opt.value().node
-            if node.has_parent1:
-                stack.append(node.parent1_uuid)
-            if node.has_parent2:
-                stack.append(node.parent2_uuid)
 
 
 fn _init_node_registry() -> GradRegistry:

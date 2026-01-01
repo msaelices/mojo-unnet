@@ -319,5 +319,39 @@ def test_backward_accumulates_gradients():
     assert_equal(b.get_grad(), 1.0)
 
 
+def test_node_walk():
+    """Test that Node.walk() returns all reachable nodes from root to leaves."""
+    # Clear registry before test
+    clear_global_registry()
+
+    # Build graph: ((a + b) * c) - d
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+    var c = Node(4.0, "c")
+    var d = Node(1.0, "d")
+
+    var sum = a + b
+    sum.name = "sum"
+    var product = sum * c
+    product.name = "product"
+    var result = product - d
+    result.name = "result"
+
+    # Walk from result
+    var visited = result.walk()
+
+    # Should contain all 7 nodes in the graph
+    assert_equal(len(visited), 7)
+
+    # Verify all expected UUIDs are in the visited list
+    assert_true(result.uuid in visited)
+    assert_true(product.uuid in visited)
+    assert_true(sum.uuid in visited)
+    assert_true(a.uuid in visited)
+    assert_true(b.uuid in visited)
+    assert_true(c.uuid in visited)
+    assert_true(d.uuid in visited)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()
