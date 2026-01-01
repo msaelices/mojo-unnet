@@ -65,18 +65,18 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
         visited.append(current_uuid)
 
         # Process parents using their UUIDs
-        if current.parent1_uuid != None:
+        if current.parent1_uuid:
             var parent1_uuid = current.parent1_uuid.value()
             var parent1_opt = registry_ptr[].get(parent1_uuid)
-            if parent1_opt != None:
+            if parent1_opt:
                 var parent1 = parent1_opt.value().node
                 edges.append((parent1, current))
                 stack.append(parent1_uuid)
 
-        if current.parent2_uuid != None:
+        if current.parent2_uuid:
             var parent2_uuid = current.parent2_uuid.value()
             var parent2_opt = registry_ptr[].get(parent2_uuid)
-            if parent2_opt != None:
+            if parent2_opt:
                 var parent2 = parent2_opt.value().node
                 edges.append((parent2, current))
                 stack.append(parent2_uuid)
@@ -146,10 +146,10 @@ fn draw(var graph: Node) raises -> PythonObject:
             plot.edge(op_node_id, node_id)
 
         # Process parents and create edges using UUIDs
-        if current.parent1_uuid != None:
+        if current.parent1_uuid:
             var parent1_uuid = current.parent1_uuid.value()
             var parent1_opt = registry_ptr[].get(parent1_uuid)
-            if parent1_opt != None:
+            if parent1_opt:
                 var parent1_id = String(parent1_uuid)
                 if op:
                     plot.edge(parent1_id, node_id + "_op")
@@ -157,10 +157,10 @@ fn draw(var graph: Node) raises -> PythonObject:
                     plot.edge(parent1_id, node_id)
                 stack.append(parent1_uuid)
 
-        if current.parent2_uuid != None:
+        if current.parent2_uuid:
             var parent2_uuid = current.parent2_uuid.value()
             var parent2_opt = registry_ptr[].get(parent2_uuid)
-            if parent2_opt != None:
+            if parent2_opt:
                 var parent2_id = String(parent2_uuid)
                 if op:
                     plot.edge(parent2_id, node_id + "_op")
