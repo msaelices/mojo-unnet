@@ -56,7 +56,7 @@ struct Neuron(Copyable):
         return params^
 
 
-struct Layer(Movable):
+struct Layer(Copyable, Movable):
     """Layer of neurons."""
 
     var neurons: List[Neuron]
@@ -106,18 +106,17 @@ struct Layer(Movable):
 struct NetworkMLP(Movable):
     """A simple MLP: 2 inputs -> 2 hidden -> 1 output."""
 
-    var hidden: Layer
-    var output: Neuron
+    var layers: List[Layer]
 
     fn __init__(out self):
         """Initialize a 2-layer MLP with 2 inputs, 2 hidden, 1 output."""
-        self.hidden = Layer(2, 2)  # 2 neurons, 2 inputs
+        self.layers = List[Layer]()
 
-        # Output neuron with weights [0.1, 0.2] and bias 0.0
-        var out_weights = List[Float64]()
-        out_weights.append(0.1)
-        out_weights.append(0.2)
-        self.output = Neuron(out_weights, 0.0)
+        # Hidden layer: 2 neurons, 2 inputs
+        self.layers.append(Layer(2, 2))
+
+        # Output layer: 1 neuron, 2 inputs (from hidden layer)
+        self.layers.append(Layer(1, 2))
 
     fn __call__(self, inputs: List[Float64]) -> Node:
         """Forward pass through the network.
@@ -128,16 +127,18 @@ struct NetworkMLP(Movable):
         Returns:
             A Node representing the final output.
         """
-        # Hidden layer
-        var hidden_outputs = self.hidden(inputs)
+        var current_inputs = inputs.copy()
 
-        # Convert to Float64 for output layer
-        var hidden_values = List[Float64]()
-        hidden_values.append(hidden_outputs[0].value)
-        hidden_values.append(hidden_outputs[1].value)
+        for layer in self.layers:
+            var layer_outputs = layer(current_inputs)
 
-        # Output layer
-        return self.output(hidden_values)
+            # Convert Node outputs to Float64 for next layer
+            current_inputs = List[Float64]()
+            for output in layer_outputs:
+                current_inputs.append(output.value)
+
+        # Return the final output as a Node
+        return Node(current_inputs[0], "output")
 
     fn parameters(self) -> List[Node]:
         """Return all trainable parameters.
@@ -146,10 +147,9 @@ struct NetworkMLP(Movable):
             A list of Node objects representing all parameters.
         """
         var params = List[Node]()
-        for p in self.hidden.parameters():
-            params.append(p)
-        for p in self.output.parameters():
-            params.append(p)
+        for layer in self.layers:
+            for p in layer.parameters():
+                params.append(p)
         return params^
 
     fn zero_grads(mut self):
