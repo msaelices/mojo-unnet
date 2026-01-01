@@ -62,7 +62,9 @@ struct MersenneTwister:
 
 
 @register_passable("trivial")
-struct UUID(Copyable, Equatable, Hashable, Movable, Stringable, Writable):
+struct UUID(
+    Copyable, Equatable, Hashable, Movable, Representable, Stringable, Writable
+):
     var bytes: StaticTuple[UInt8, 16]
 
     fn __init__(out self):
@@ -103,6 +105,9 @@ struct UUID(Copyable, Equatable, Hashable, Movable, Stringable, Writable):
                 + hex_digits[Int(self.bytes[i] & 0xF)]
             )
         return result
+
+    fn __repr__(self) -> String:
+        return "UUID(" + self.__str__() + ")"
 
     fn write_to(self, mut writer: Some[Writer]) -> None:
         writer.write(String(self))
