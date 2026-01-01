@@ -274,5 +274,50 @@ def test_zero_grad():
     assert_equal(d.get_grad(), 0.0)
 
 
+def test_backward_accumulates_gradients():
+    """Test that backward() accumulates gradients when called multiple times.
+
+    This mimics PyTorch behavior where gradients accumulate if zero_grad()
+    is not called between backward() passes.
+
+    Note: The root node's gradient is always set to 1.0 on each backward pass
+    (it's the starting point), but input/leaf node gradients accumulate.
+    """
+    # Clear registry before test
+    clear_global_registry()
+
+    # Build simple graph: c = a + b
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+    var c = a + b
+    c.name = "c"
+
+    # First backward pass
+    c.backward()
+    assert_equal(c.get_grad(), 1.0)
+    assert_equal(a.get_grad(), 1.0)
+    assert_equal(b.get_grad(), 1.0)
+
+    # Second backward pass without zero_grad()
+    # Gradients accumulate for input nodes (a, b), but root (c) is reset to 1.0
+    c.backward()
+    assert_equal(c.get_grad(), 1.0)  # Root is always set to 1.0
+    assert_equal(a.get_grad(), 2.0)  # Input gradients accumulate
+    assert_equal(b.get_grad(), 2.0)  # Input gradients accumulate
+
+    # Third backward pass - gradients continue to accumulate
+    c.backward()
+    assert_equal(c.get_grad(), 1.0)
+    assert_equal(a.get_grad(), 3.0)
+    assert_equal(b.get_grad(), 3.0)
+
+    # Now zero_grad() and backward() again
+    c.zero_grad()
+    c.backward()
+    assert_equal(c.get_grad(), 1.0)
+    assert_equal(a.get_grad(), 1.0)
+    assert_equal(b.get_grad(), 1.0)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()

@@ -207,15 +207,17 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
         """Compute gradients via backpropagation using the global registry.
 
         The registry stores GradEntry(grad, node) for each UUID.
+
+        Note: This does NOT reset gradients before computation.
+        Call zero_grad() explicitly before backward() if needed,
+        similar to PyTorch's behavior.
         """
         var registry_ptr = get_global_registry_ptr()
 
-        # Reset all gradients
+        # Collect all UUIDs in the registry
         var uuids = List[UUID]()
         for uuid in registry_ptr[].keys():
             uuids.append(uuid)
-        for uuid in uuids:
-            registry_ptr[].set_grad(uuid, 0.0)
 
         # Collect nodes in topological order (inputs first, then outputs)
         var topo_order = List[UUID]()
