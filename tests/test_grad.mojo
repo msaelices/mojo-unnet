@@ -234,5 +234,45 @@ def test_backward_multiple_uses():
     assert_equal(x_copy.get_grad(), 3.0)
 
 
+def test_zero_grad():
+    """Test that zero_grad() zeroes gradients from root to leaf nodes."""
+    # Clear registry before test
+    clear_global_registry()
+
+    # Build graph: ((a + b) * c) - d
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+    var c = Node(4.0, "c")
+    var d = Node(1.0, "d")
+
+    var sum = a + b
+    sum.name = "sum"
+    var product = sum * c
+    product.name = "product"
+    var result = product - d
+    result.name = "result"
+
+    # Perform backpropagation to compute gradients
+    result.backward()
+
+    # Verify gradients are computed
+    assert_equal(result.get_grad(), 1.0)
+    assert_equal(a.get_grad(), 4.0)
+    assert_equal(b.get_grad(), 4.0)
+    assert_equal(c.get_grad(), 5.0)
+
+    # Now zero gradients from result
+    result.zero_grad()
+
+    # All gradients in the computation graph should be zero
+    assert_equal(result.get_grad(), 0.0)
+    assert_equal(product.get_grad(), 0.0)
+    assert_equal(sum.get_grad(), 0.0)
+    assert_equal(a.get_grad(), 0.0)
+    assert_equal(b.get_grad(), 0.0)
+    assert_equal(c.get_grad(), 0.0)
+    assert_equal(d.get_grad(), 0.0)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()
