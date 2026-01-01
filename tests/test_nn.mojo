@@ -4,7 +4,7 @@ from testing import (
     TestSuite,
 )
 
-from unnet import Neuron, Layer2, NetworkMLP, Node, clear_global_registry
+from unnet import Neuron, Layer, NetworkMLP, Node, clear_global_registry
 
 
 def test_neuron_creation():
@@ -38,10 +38,10 @@ def test_neuron_forward_pass():
 
 
 def test_layer_creation():
-    """Test that a Layer2 can be created."""
+    """Test that a Layer can be created."""
     clear_global_registry()
 
-    var layer = Layer2(2)
+    var layer = Layer(2, 2)  # num_neurons=2, num_inputs=2
     var params = layer.parameters()
     assert_equal(len(params), 6)  # 2 neurons * 3 params
 
@@ -50,7 +50,7 @@ def test_layer_forward_pass():
     """Test the forward pass through a layer."""
     clear_global_registry()
 
-    var layer = Layer2(2)
+    var layer = Layer(2, 2)  # num_neurons=2, num_inputs=2
     var outputs = layer([1.0, 2.0])
 
     assert_equal(len(outputs), 2)

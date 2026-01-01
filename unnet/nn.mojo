@@ -3,7 +3,7 @@
 from .grad import Node, clear_global_registry
 
 
-struct Neuron(Movable):
+struct Neuron(Copyable):
     """Single neuron with weights and bias."""
 
     var weights: List[Node]
@@ -56,42 +56,38 @@ struct Neuron(Movable):
         return params^
 
 
-struct Layer2(Movable):
-    """Layer with exactly 2 neurons."""
+struct Layer(Movable):
+    """Layer of neurons."""
 
-    var n1: Neuron
-    var n2: Neuron
+    var neurons: List[Neuron]
 
-    fn __init__(out self, num_inputs: Int):
-        """Initialize a layer with 2 neurons.
+    fn __init__(out self, num_neurons: Int, num_inputs: Int):
+        """Initialize a layer with neurons.
 
         Args:
-            num_inputs: Number of inputs to each neuron (must be 2).
+            num_neurons: Number of neurons in this layer.
+            num_inputs: Number of inputs to each neuron.
         """
-        # Initialize neuron 1 with weights [0.1, 0.2] and bias 0.0
-        var n1_weights = List[Float64]()
-        n1_weights.append(0.1)
-        n1_weights.append(0.2)
-        self.n1 = Neuron(n1_weights, 0.0)
-
-        # Initialize neuron 2 with weights [0.1, 0.2] and bias 0.0
-        var n2_weights = List[Float64]()
-        n2_weights.append(0.1)
-        n2_weights.append(0.2)
-        self.n2 = Neuron(n2_weights, 0.0)
+        self.neurons = List[Neuron]()
+        for i in range(num_neurons):
+            var weights = List[Float64]()
+            for j in range(num_inputs):
+                # Create weights: [0.1, 0.2, 0.3, ...] based on position
+                weights.append(0.1 * Float64(j + 1))
+            self.neurons.append(Neuron(weights, 0.0))
 
     fn __call__(self, inputs: List[Float64]) -> List[Node]:
         """Forward pass through the layer.
 
         Args:
-            inputs: List of 2 input values.
+            inputs: List of input values.
 
         Returns:
-            A list of 2 Node objects representing the outputs.
+            A list of Node objects representing the outputs.
         """
         var outputs = List[Node]()
-        outputs.append(self.n1(inputs))
-        outputs.append(self.n2(inputs))
+        for neuron in self.neurons:
+            outputs.append(neuron(inputs))
         return outputs^
 
     fn parameters(self) -> List[Node]:
@@ -101,22 +97,21 @@ struct Layer2(Movable):
             A list of Node objects representing all parameters.
         """
         var params = List[Node]()
-        for p in self.n1.parameters():
-            params.append(p)
-        for p in self.n2.parameters():
-            params.append(p)
+        for neuron in self.neurons:
+            for p in neuron.parameters():
+                params.append(p)
         return params^
 
 
 struct NetworkMLP(Movable):
     """A simple MLP: 2 inputs -> 2 hidden -> 1 output."""
 
-    var hidden: Layer2
+    var hidden: Layer
     var output: Neuron
 
     fn __init__(out self):
         """Initialize a 2-layer MLP with 2 inputs, 2 hidden, 1 output."""
-        self.hidden = Layer2(2)
+        self.hidden = Layer(2, 2)  # 2 neurons, 2 inputs
 
         # Output neuron with weights [0.1, 0.2] and bias 0.0
         var out_weights = List[Float64]()
