@@ -11,19 +11,25 @@ def test_neuron_creation():
     """Test that a Neuron can be created."""
     clear_global_registry()
 
-    var neuron = Neuron(2)
+    var weights = List[Float64]()
+    weights.append(0.1)
+    weights.append(0.2)
+    var neuron = Neuron(weights, 0.0)
     var params = neuron.parameters()
-    assert_equal(len(params), 3)  # w1, w2, b
+    assert_equal(len(params), 3)  # 2 weights + 1 bias
 
 
 def test_neuron_forward_pass():
     """Test the forward pass through a neuron."""
     clear_global_registry()
 
-    var neuron = Neuron(2)
+    var weights = List[Float64]()
+    weights.append(0.1)
+    weights.append(0.2)
+    var neuron = Neuron(weights, 0.0)
 
     # Forward pass with inputs [1.0, 2.0]
-    # w1=0.1, w2=0.2, b=0.0
+    # w=[0.1, 0.2], b=0.0
     # sum = 0.1*1.0 + 0.2*2.0 = 0.5
     # tanh(0.5) ≈ 0.462
     var result = neuron([1.0, 2.0])

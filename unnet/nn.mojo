@@ -6,36 +6,39 @@ from .grad import Node, clear_global_registry
 struct Neuron(Movable):
     """Single neuron with weights and bias."""
 
-    var w1: Node
-    var w2: Node
-    var b: Node
+    var weights: List[Node]
+    var bias: Node
 
-    fn __init__(out self, num_inputs: Int):
-        """Initialize a neuron with small fixed weights.
+    fn __init__(out self, weight_values: List[Float64], bias_value: Float64):
+        """Initialize a neuron with given weight values and bias.
 
         Args:
-            num_inputs: Number of input connections (must be 2 for now).
+            weight_values: List of initial weight values.
+            bias_value: Initial bias value.
         """
-        # Simple fixed initialization for 2 inputs
-        self.w1 = Node(0.1, "w1")
-        self.w2 = Node(0.2, "w2")
-        self.b = Node(0.0, "b")
+        self.weights = List[Node]()
+        for i in range(len(weight_values)):
+            self.weights.append(Node(weight_values[i], "w"))
+        self.bias = Node(bias_value, "b")
 
     fn __call__(self, inputs: List[Float64]) -> Node:
         """Forward pass through the neuron.
 
-        Computes: activation(w1*x1 + w2*x2 + b)
+        Computes: activation(sum(w_i * x_i) + b)
 
         Args:
-            inputs: List of 2 input values.
+            inputs: List of input values.
 
         Returns:
             A Node representing the output of the neuron.
         """
-        # Weighted sum: w1*x1 + w2*x2 + b
-        var x1 = Node(inputs[0], "x1")
-        var x2 = Node(inputs[1], "x2")
-        var sum = self.b + self.w1 * x1 + self.w2 * x2
+        # Start with bias
+        var sum = self.bias
+
+        # Add weighted inputs: sum += w_i * x_i
+        for i in range(len(inputs)):
+            var x = Node(inputs[i], "x")
+            sum = sum + self.weights[i] * x
 
         # Apply tanh activation
         return sum.tanh()
@@ -47,9 +50,9 @@ struct Neuron(Movable):
             A list of Node objects representing the parameters.
         """
         var params = List[Node]()
-        params.append(self.w1)
-        params.append(self.w2)
-        params.append(self.b)
+        for w in self.weights:
+            params.append(w)
+        params.append(self.bias)
         return params^
 
 
@@ -65,8 +68,17 @@ struct Layer2(Movable):
         Args:
             num_inputs: Number of inputs to each neuron (must be 2).
         """
-        self.n1 = Neuron(num_inputs)
-        self.n2 = Neuron(num_inputs)
+        # Initialize neuron 1 with weights [0.1, 0.2] and bias 0.0
+        var n1_weights = List[Float64]()
+        n1_weights.append(0.1)
+        n1_weights.append(0.2)
+        self.n1 = Neuron(n1_weights, 0.0)
+
+        # Initialize neuron 2 with weights [0.1, 0.2] and bias 0.0
+        var n2_weights = List[Float64]()
+        n2_weights.append(0.1)
+        n2_weights.append(0.2)
+        self.n2 = Neuron(n2_weights, 0.0)
 
     fn __call__(self, inputs: List[Float64]) -> List[Node]:
         """Forward pass through the layer.
@@ -105,7 +117,12 @@ struct NetworkMLP(Movable):
     fn __init__(out self):
         """Initialize a 2-layer MLP with 2 inputs, 2 hidden, 1 output."""
         self.hidden = Layer2(2)
-        self.output = Neuron(2)
+
+        # Output neuron with weights [0.1, 0.2] and bias 0.0
+        var out_weights = List[Float64]()
+        out_weights.append(0.1)
+        out_weights.append(0.2)
+        self.output = Neuron(out_weights, 0.0)
 
     fn __call__(self, inputs: List[Float64]) -> Node:
         """Forward pass through the network.
