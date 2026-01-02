@@ -21,7 +21,7 @@ struct Neuron(Copyable):
             self.weights.append(Node(weight_values[i], "w"))
         self.bias = Node(bias_value, "b")
 
-    fn __call__(self, inputs: List[Float64]) -> Node:
+    fn __call__(self, inputs: List[Node]) -> Node:
         """Forward pass through the neuron.
 
         Computes: activation(sum(w_i * x_i) + b)
@@ -36,8 +36,7 @@ struct Neuron(Copyable):
         var sum = self.bias
 
         # Add weighted inputs: sum += w_i * x_i
-        for i in range(len(inputs)):
-            var x = Node(inputs[i], "x")
+        for i, x in enumerate(inputs):
             sum = sum + self.weights[i] * x
 
         # Apply tanh activation
@@ -76,7 +75,7 @@ struct Layer(Copyable, Movable):
                 weights.append(0.1 * Float64(j + 1))
             self.neurons.append(Neuron(weights, 0.0))
 
-    fn __call__(self, inputs: List[Float64]) -> List[Node]:
+    fn __call__(self, inputs: List[Node]) -> List[Node]:
         """Forward pass through the layer.
 
         Args:
@@ -109,6 +108,7 @@ struct NetworkMLP(Movable):
     var input_size: Int
     var hidden_size: Int
     var layers: List[Layer]
+    var output: Neuron
 
     fn __init__(out self, num_layers: Int, input_size: Int, hidden_size: Int):
         """Initialize a MLP with input_size inputs, hidden_size hidden, 1 output.
@@ -128,12 +128,14 @@ struct NetworkMLP(Movable):
             else:
                 # Subsequent hidden layers: hidden_size neurons, hidden_size inputs
                 self.layers.append(Layer(hidden_size, hidden_size))
+        # Output layer: 1 neuron, hidden_size inputs
+        self.output = Neuron(List[Float64](length=hidden_size, fill=0.1), 0.0)
 
-    fn __call__(self, inputs: List[Float64]) -> Node:
+    fn __call__(self, inputs: List[Node]) -> Node:
         """Forward pass through the network.
 
         Args:
-            inputs: List of 2 input values.
+            inputs: List of num_inputs input values.
 
         Returns:
             A Node representing the final output.
@@ -141,15 +143,10 @@ struct NetworkMLP(Movable):
         var current_inputs = inputs.copy()
 
         for layer in self.layers:
-            var layer_outputs = layer(current_inputs)
-
-            # Convert Node outputs to Float64 for next layer
-            current_inputs = List[Float64]()
-            for output in layer_outputs:
-                current_inputs.append(output.value)
+            current_inputs = layer(current_inputs)
 
         # Return the final output as a Node
-        return Node(current_inputs[0], "output")
+        return self.output(current_inputs)
 
     fn parameters(self) -> List[Node]:
         """Return all trainable parameters.
