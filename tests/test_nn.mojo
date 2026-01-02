@@ -43,7 +43,9 @@ def test_layer_creation():
 
     var layer = Layer(2, 2)  # num_neurons=2, num_inputs=2
     var params = layer.parameters()
-    assert_equal(len(params), 6)  # 2 neurons * 3 params
+    assert_equal(
+        len(params), 6
+    )  # 2 neurons * 3 params each (2 weights + 1 bias)
 
 
 def test_layer_forward_pass():

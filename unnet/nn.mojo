@@ -142,6 +142,7 @@ struct NetworkMLP(Movable):
         """
         var current_inputs = inputs.copy()
 
+        # Pass through each layer. This composes the graph of nodes.
         for layer in self.layers:
             current_inputs = layer(current_inputs)
 
