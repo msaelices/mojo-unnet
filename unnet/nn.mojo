@@ -107,18 +107,28 @@ struct NetworkMLP(Movable):
 
     var input_size: Int
     var hidden_size: Int
+    var output_size: Int
     var layers: List[Layer]
-    var output: Neuron
+    var output_layer: Layer
 
-    fn __init__(out self, num_layers: Int, input_size: Int, hidden_size: Int):
-        """Initialize a MLP with input_size inputs, hidden_size hidden, 1 output.
+    fn __init__(
+        out self,
+        num_layers: Int,
+        input_size: Int,
+        hidden_size: Int,
+        output_size: Int = 1,
+    ):
+        """Initialize a MLP with input_size inputs, hidden_size hidden, output_size outputs.
+
         Args:
             num_layers: Number of hidden layers.
             input_size: Number of input features.
             hidden_size: Number of neurons in each hidden layer.
+            output_size: Number of output neurons (default: 1).
         """
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.output_size = output_size
         self.layers = List[Layer]()
 
         for i in range(num_layers):
@@ -128,17 +138,17 @@ struct NetworkMLP(Movable):
             else:
                 # Subsequent hidden layers: hidden_size neurons, hidden_size inputs
                 self.layers.append(Layer(hidden_size, hidden_size))
-        # Output layer: 1 neuron, hidden_size inputs
-        self.output = Neuron(List[Float64](length=hidden_size, fill=0.1), 0.0)
+        # Output layer: output_size neurons, hidden_size inputs
+        self.output_layer = Layer(output_size, hidden_size)
 
-    fn __call__(self, inputs: List[Node]) -> Node:
+    fn __call__(self, inputs: List[Node]) -> List[Node]:
         """Forward pass through the network.
 
         Args:
             inputs: List of num_inputs input values.
 
         Returns:
-            A Node representing the final output.
+            A list of Node objects representing the final outputs.
         """
         var current_inputs = inputs.copy()
 
@@ -146,8 +156,8 @@ struct NetworkMLP(Movable):
         for layer in self.layers:
             current_inputs = layer(current_inputs)
 
-        # Return the final output as a Node
-        return self.output(current_inputs)
+        # Return the final output layer outputs
+        return self.output_layer(current_inputs)
 
     fn parameters(self) -> List[Node]:
         """Return all trainable parameters.
@@ -159,6 +169,8 @@ struct NetworkMLP(Movable):
         for layer in self.layers:
             for p in layer.parameters():
                 params.append(p)
+        for p in self.output_layer.parameters():
+            params.append(p)
         return params^
 
     fn zero_grads(mut self):

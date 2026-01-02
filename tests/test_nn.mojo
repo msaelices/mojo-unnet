@@ -66,8 +66,8 @@ def test_network_creation():
 
     var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
     var params = net.parameters()
-    # Hidden: 2 * 3 = 6, Hidden: 2 * 3 = 6 => Total = 12
-    assert_equal(len(params), 12)
+    # Hidden: 2 * 3 = 6, Hidden: 2 * 3 = 6, Output: 1 * 3 = 3 => Total = 15
+    assert_equal(len(params), 15)
 
 
 def test_network_forward_pass():
@@ -75,10 +75,11 @@ def test_network_forward_pass():
     clear_global_registry()
 
     var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
-    var output = net([1.0, 2.0])
+    var outputs = net([1.0, 2.0])
 
-    assert_true(output.value >= -1.0)
-    assert_true(output.value <= 1.0)
+    assert_equal(len(outputs), 1)
+    assert_true(outputs[0].value >= -1.0)
+    assert_true(outputs[0].value <= 1.0)
 
 
 def test_network_backward_pass():
@@ -86,8 +87,8 @@ def test_network_backward_pass():
     clear_global_registry()
 
     var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
-    var output = net([1.0, 1.0])
-    output.backward()
+    var outputs = net([1.0, 1.0])
+    outputs[0].backward()
 
     # Check that gradients are computed
     var params = net.parameters()
@@ -105,14 +106,30 @@ def test_network_zero_grads():
     clear_global_registry()
 
     var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
-    var output = net([1.0, 1.0])
-    output.backward()
+    var outputs = net([1.0, 1.0])
+    outputs[0].backward()
 
     net.zero_grads()
 
     var params = net.parameters()
     for p in params:
         assert_equal(p.get_grad(), 0.0)
+
+
+def test_network_multiple_outputs():
+    """Test network with multiple outputs."""
+    clear_global_registry()
+
+    var net = NetworkMLP(
+        num_layers=1, input_size=2, hidden_size=3, output_size=2
+    )
+    var outputs = net([1.0, 2.0])
+
+    assert_equal(len(outputs), 2)
+    assert_true(outputs[0].value >= -1.0)
+    assert_true(outputs[0].value <= 1.0)
+    assert_true(outputs[1].value >= -1.0)
+    assert_true(outputs[1].value <= 1.0)
 
 
 def main():
