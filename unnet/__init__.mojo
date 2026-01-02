@@ -9,5 +9,5 @@ from .grad import (
     get_global_registry_ptr,
     clear_global_registry,
 )
-from .nn import Network, Layer, Neuron
+from .nn import NetworkMLP, Layer, Neuron
 from .uuid import UUID

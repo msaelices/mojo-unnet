@@ -9,7 +9,7 @@ from sys.ffi import _Global
 from unnet.uuid import generate_uuid, UUID
 
 
-struct Op(Equatable, ImplicitlyCopyable, Movable, Stringable):
+struct Op(Equatable, ImplicitlyCopyable, Movable, Representable, Stringable):
     comptime NONE: Int = 0
     comptime ADD: Int = 1
     comptime SUB: Int = 2
@@ -45,8 +45,11 @@ struct Op(Equatable, ImplicitlyCopyable, Movable, Stringable):
             return "tanh"
         return "UnknownOp"
 
+    fn __repr__(self) -> String:
+        return String("Op(", self.__str__(), ")")
 
-struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
+
+struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     """Representation of an expression node capable of performing math operations and calculating backpropagation.
     """
 
@@ -57,6 +60,20 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     # Store parent UUIDs to avoid recursive type
     var parent1_uuid: Optional[UUID]
     var parent2_uuid: Optional[UUID]
+
+    @implicit
+    fn __init__(
+        out self,
+        value: Float64,
+    ):
+        """Initialize a node with a value and optional name."""
+        self.uuid = generate_uuid()
+        self.value = value
+        self.name = "N/A"
+        self.op = Op.NONE
+        self.parent1_uuid = None
+        self.parent2_uuid = None
+        _register_node(self)
 
     fn __init__(
         out self,
@@ -113,6 +130,21 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Writable):
     @always_inline
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
+
+    fn __repr__(self) -> String:
+        return String(
+            "Node(uuid=",
+            self.uuid,
+            ", value=",
+            self.value,
+            ", grad=",
+            self.get_grad(),
+            ", op=",
+            repr(self.op),
+            ", name=",
+            self.name,
+            ")",
+        )
 
     @always_inline
     fn __add__(self, other: Node) -> Node:

@@ -14,11 +14,15 @@ This is a pure Mojo implementation inspired by [unnet](https://github.com/yourus
 - [x] Graph traversal (walk, walk_topo)
 - [x] Gradient zeroing (zero_grad)
 - [x] Global registry for gradient storage
+- [x] Implicit Float64 to Node conversion
+- [x] Representable conformance for debugging
 
 ### `nn.mojo` - Neural Network Components
-- [ ] Neuron struct (weights, bias, forward pass)
-- [ ] Layer struct (multiple neurons)
-- [ ] Network struct (multiple layers)
+- [x] Neuron struct (weights, bias, forward pass with tanh activation)
+- [x] Layer struct (multiple neurons, configurable size)
+- [x] NetworkMLP struct (multi-layer perceptron with parameterized architecture)
+- [x] Parameter access for gradient computation
+- [x] Gradient zeroing across network
 - [ ] Training loop with gradient descent
 
 ### `utils.mojo` - Utilities
@@ -94,10 +98,25 @@ print(c.get_grad())  # 1.0
 ### Neural Network Example
 
 ```mojo
-from unnet import Network
+from unnet import NetworkMLP, Node, clear_global_registry
 
-# TODO: Neural network components not yet implemented
-# This section will be updated once Neuron, Layer, and Network are implemented
+# Clear the registry before starting
+clear_global_registry()
+
+# Create a 2-layer MLP with 2 inputs, 2 hidden neurons, 1 output
+var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
+
+# Forward pass with inputs
+var inputs = List[Node]()
+inputs.append(Node(1.0))
+inputs.append(Node(2.0))
+var output = net(inputs)
+
+# Backward pass to compute gradients
+output.backward()
+
+# Zero gradients for next iteration
+net.zero_grads()
 ```
 
 ## Project Structure
@@ -108,10 +127,11 @@ mojo-unnet/
 │   ├── __init__.mojo    # Package initialization
 │   ├── grad.mojo        # Autograd implementation (Node, Op, GradRegistry)
 │   ├── uuid.mojo        # UUID generation and comparison
-│   ├── nn.mojo          # Neural network components (Neuron, Layer, Network) - TODO
+│   ├── nn.mojo          # Neural network components (Neuron, Layer, NetworkMLP)
 │   └── utils.mojo       # Utilities (graph traversal, graphviz visualization)
 ├── tests/               # Test suite (Mojo tests)
-│   ├── test_grad.mojo   # Tests for autograd (12 tests, all passing)
+│   ├── test_grad.mojo   # Tests for autograd (13 tests, all passing)
+│   ├── test_nn.mojo     # Tests for neural network components (8 tests, all passing)
 │   └── test_utils.mojo  # Tests for utilities (9 tests, all passing)
 ├── .github/workflows/   # CI/CD
 ├── pyproject.toml       # Project configuration
