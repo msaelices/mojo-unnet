@@ -10,17 +10,17 @@ struct Neuron(Copyable):
     var weights: List[Node]
     var bias: Node
 
-    fn __init__(out self, weight_values: List[Float64], bias_value: Float64):
+    fn __init__(out self, weights: List[Float64], bias: Float64):
         """Initialize a neuron with given weight values and bias.
 
         Args:
-            weight_values: List of initial weight values.
-            bias_value: Initial bias value.
+            weights: List of initial weight values.
+            bias: Initial bias value.
         """
         self.weights = List[Node]()
-        for i in range(len(weight_values)):
-            self.weights.append(Node(weight_values[i], "w"))
-        self.bias = Node(bias_value, "b")
+        for i, w in enumerate(weights):
+            self.weights.append(Node(w, "w{}".format(i)))
+        self.bias = Node(bias, "b")
 
     @staticmethod
     fn create_random(num_inputs: Int) -> Neuron:
@@ -270,3 +270,73 @@ struct NetworkMLP(Movable):
         var params = self.parameters()
         for i in range(len(params)):
             params[i].zero_grad()
+
+    fn train(
+        mut self,
+        training_data: List[List[Float64]],
+        desired_output: List[List[Float64]],
+        steps: Int = 20,
+    ) raises -> List[Float64]:
+        """Train the network using gradient descent.
+
+        Performs training by iterating through the dataset for the specified
+        number of steps, computing loss, backpropagating gradients, and
+        updating weights with a decaying learning rate.
+
+        Args:
+            training_data: List of input samples (each sample is a list of floats).
+            desired_output: List of target output vectors (one per training sample).
+            steps: Number of training iterations (default: 20).
+
+        Returns:
+            A list of loss values for each training step.
+
+        Raises:
+            Error: If training_data and desired_output have different lengths.
+        """
+        if len(training_data) != len(desired_output):
+            raise Error(
+                "training_data and desired_output must have the same length"
+            )
+
+        var losses = List[Float64]()
+        var loss: Node
+
+        for step in range(steps):
+            # Forward pass: compute predictions and accumulate loss
+            loss = 0.0
+            for i in range(len(training_data)):
+                # Convert input floats to Nodes
+                var input_nodes = List[Node]()
+                for val in training_data[i]:
+                    input_nodes.append(val)
+
+                # Get all predictions
+                var outputs = self(input_nodes)
+
+                # Compute loss for each output and sum
+                for j in range(len(outputs)):
+                    var prediction = outputs[j]
+                    var target: Node = desired_output[i][j]
+                    var error = prediction - target
+                    var squared_error = error**2.0
+                    loss = loss + squared_error
+
+            # Backward pass: zero gradients, then backpropagate
+            self.zero_grads()
+            loss.backward()
+
+            # Update parameters with decaying learning rate
+            var l_rate = 0.2 - 0.1 * Float64(step) / Float64(steps)
+            var params = self.parameters()
+            var registry_ptr = get_global_registry_ptr()
+
+            for param in params:
+                var grad = param.get_grad()
+                var new_value = param.value - l_rate * grad
+                registry_ptr[].set_value(param.uuid, new_value)
+
+            # Record loss
+            losses.append(loss.value)
+
+        return losses^
