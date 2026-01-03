@@ -23,7 +23,8 @@ This is a pure Mojo implementation inspired by [unnet](https://github.com/yourus
 - [x] NetworkMLP struct (multi-layer perceptron with parameterized architecture)
 - [x] Parameter access for gradient computation
 - [x] Gradient zeroing across network
-- [ ] Training loop with gradient descent
+- [x] Training loop with gradient descent
+- [x] Random initialization (create_random methods)
 
 ### `utils.mojo` - Utilities
 - [x] Graph traversal (walk)
@@ -119,6 +120,40 @@ output.backward()
 net.zero_grads()
 ```
 
+### Training Example
+
+```mojo
+from unnet import NetworkMLP, clear_global_registry
+
+# Clear the registry before starting
+clear_global_registry()
+
+# Create a network with random initialization
+var net = NetworkMLP.create_random(
+    num_layers=1, input_size=2, hidden_size=4, output_size=1
+)
+
+# Prepare training data (XOR problem)
+var training_data = List[List[Float64]]()
+training_data.append([0.0, 0.0])
+training_data.append([1.0, 0.0])
+training_data.append([0.0, 1.0])
+training_data.append([1.0, 1.0])
+
+var desired_output = List[List[Float64]]()
+desired_output.append([0.0])
+desired_output.append([1.0])
+desired_output.append([1.0])
+desired_output.append([0.0])
+
+# Train the network
+var losses = net.train(training_data, desired_output, steps=100)
+
+# Loss values show training progress
+print("Initial loss:", losses[0])
+print("Final loss:", losses[-1])
+```
+
 ## Project Structure
 
 ```
@@ -130,9 +165,9 @@ mojo-unnet/
 │   ├── nn.mojo          # Neural network components (Neuron, Layer, NetworkMLP)
 │   └── utils.mojo       # Utilities (graph traversal, graphviz visualization)
 ├── tests/               # Test suite (Mojo tests)
-│   ├── test_grad.mojo   # Tests for autograd (13 tests, all passing)
-│   ├── test_nn.mojo     # Tests for neural network components (8 tests, all passing)
-│   └── test_utils.mojo  # Tests for utilities (9 tests, all passing)
+│   ├── test_grad.mojo   # Tests for autograd
+│   ├── test_nn.mojo     # Tests for neural network components
+│   └── test_utils.mojo  # Tests for utilities
 ├── .github/workflows/   # CI/CD
 ├── pyproject.toml       # Project configuration
 └── pixi.toml            # Pixi package manager configuration
