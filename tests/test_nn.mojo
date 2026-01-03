@@ -64,6 +64,22 @@ def test_layer_creation():
     )  # 2 neurons * 3 params each (2 weights + 1 bias)
 
 
+def test_layer_create_random():
+    """Test that Layer.create_random creates a valid layer."""
+    clear_global_registry()
+
+    var layer = Layer.create_random(3, 4)  # 3 neurons, 4 inputs
+    var params = layer.parameters()
+
+    # Should have 3 neurons * (4 weights + 1 bias) = 15 parameters
+    assert_equal(len(params), 15)
+
+    # All values should be in range [-1.0, 1.0]
+    for p in params:
+        assert_true(p.value >= -1.0)
+        assert_true(p.value <= 1.0)
+
+
 def test_layer_forward_pass():
     """Test the forward pass through a layer."""
     clear_global_registry()

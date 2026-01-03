@@ -81,6 +81,10 @@ struct Layer(Copyable, Movable):
 
     var neurons: List[Neuron]
 
+    fn __init__(out self):
+        """Initialize an empty layer."""
+        self.neurons = List[Neuron]()
+
     fn __init__(out self, num_neurons: Int, num_inputs: Int):
         """Initialize a layer with neurons.
 
@@ -95,6 +99,26 @@ struct Layer(Copyable, Movable):
                 # Create weights: [0.1, 0.2, 0.3, ...] based on position
                 weights.append(0.1 * Float64(j + 1))
             self.neurons.append(Neuron(weights, 0.0))
+
+    @staticmethod
+    fn create_random(num_neurons: Int, num_inputs: Int) -> Layer:
+        """Create a layer with randomly initialized neurons.
+
+        Creates a layer where each neuron has randomly initialized weights
+        and bias uniformly distributed between -1.0 and 1.0.
+
+        Args:
+            num_neurons: Number of neurons in this layer.
+            num_inputs: Number of inputs to each neuron.
+
+        Returns:
+            A Layer with randomly initialized neurons.
+        """
+        var layer = Layer()
+        layer.neurons = List[Neuron]()
+        for _ in range(num_neurons):
+            layer.neurons.append(Neuron.create_random(num_inputs))
+        return layer^
 
     fn __call__(self, inputs: List[Node]) -> List[Node]:
         """Forward pass through the layer.
