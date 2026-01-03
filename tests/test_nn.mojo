@@ -187,5 +187,62 @@ def test_network_create_random():
     assert_equal(len(outputs), 2)
 
 
+def test_network_train_single_output():
+    """Test that NetworkMLP.train performs training for single output."""
+    clear_global_registry()
+
+    # Create a simple network: 2 inputs -> 2 hidden -> 1 output
+    var net = NetworkMLP.create_random(
+        num_layers=1, input_size=2, hidden_size=2, output_size=1
+    )
+
+    # Simple training data: learn XOR function
+    var training_data = List[List[Float64]]()
+    training_data.append([0.0, 0.0])
+    training_data.append([1.0, 0.0])
+    training_data.append([0.0, 1.0])
+    training_data.append([1.0, 1.0])
+
+    var desired_output = List[List[Float64]]()
+    desired_output.append([0.0])
+    desired_output.append([1.0])
+    desired_output.append([1.0])
+    desired_output.append([0.0])
+
+    # Train for 10 steps
+    var losses = net.train(training_data, desired_output, steps=10)
+
+    # Check that we got loss values
+    assert_equal(len(losses), 10)
+
+    # Loss should generally decrease (allow some tolerance for small steps)
+    assert_true(losses[0] >= losses[9] or abs(losses[0] - losses[9]) < 0.5)
+
+
+def test_network_train_multi_output():
+    """Test that NetworkMLP.train performs training for multiple outputs."""
+    clear_global_registry()
+
+    # Create a network: 2 inputs -> 3 hidden -> 2 outputs
+    var net = NetworkMLP.create_random(
+        num_layers=1, input_size=2, hidden_size=3, output_size=2
+    )
+
+    # Training data
+    var training_data = List[List[Float64]]()
+    training_data.append([0.0, 0.0])
+    training_data.append([1.0, 1.0])
+
+    var desired_output = List[List[Float64]]()
+    desired_output.append([0.0, 1.0])
+    desired_output.append([1.0, 0.0])
+
+    # Train for 10 steps
+    var losses = net.train(training_data, desired_output, steps=10)
+
+    # Check that we got loss values
+    assert_equal(len(losses), 10)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()

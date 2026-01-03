@@ -498,6 +498,19 @@ struct GradRegistry(Copyable):
             entry.grad = value
             self._registry[uuid] = entry
 
+    fn set_value(mut self, uuid: UUID, value: Float64):
+        """Set the value for a node in the registry.
+
+        Args:
+            uuid: The UUID of the node.
+            value: The new value.
+        """
+        ref entry_opt = self._registry.get(uuid)
+        if entry_opt:
+            var entry = entry_opt.value()
+            entry.node.value = value
+            self._registry[uuid] = entry
+
     fn keys(self) -> List[UUID]:
         """Get all UUIDs in the registry.
 
