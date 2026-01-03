@@ -37,6 +37,22 @@ def test_neuron_forward_pass():
     assert_true(abs(result.value - 0.462) < 0.01)
 
 
+def test_neuron_create_random():
+    """Test that Neuron.create_random creates a valid neuron."""
+    clear_global_registry()
+
+    var neuron = Neuron.create_random(5)  # 5 inputs
+    var params = neuron.parameters()
+
+    # Should have 5 weights + 1 bias = 6 parameters
+    assert_equal(len(params), 6)
+
+    # All values should be in range [-1.0, 1.0]
+    for p in params:
+        assert_true(p.value >= -1.0)
+        assert_true(p.value <= 1.0)
+
+
 def test_layer_creation():
     """Test that a Layer can be created."""
     clear_global_registry()
@@ -46,6 +62,22 @@ def test_layer_creation():
     assert_equal(
         len(params), 6
     )  # 2 neurons * 3 params each (2 weights + 1 bias)
+
+
+def test_layer_create_random():
+    """Test that Layer.create_random creates a valid layer."""
+    clear_global_registry()
+
+    var layer = Layer.create_random(3, 4)  # 3 neurons, 4 inputs
+    var params = layer.parameters()
+
+    # Should have 3 neurons * (4 weights + 1 bias) = 15 parameters
+    assert_equal(len(params), 15)
+
+    # All values should be in range [-1.0, 1.0]
+    for p in params:
+        assert_true(p.value >= -1.0)
+        assert_true(p.value <= 1.0)
 
 
 def test_layer_forward_pass():
@@ -130,6 +162,29 @@ def test_network_multiple_outputs():
     assert_true(outputs[0].value <= 1.0)
     assert_true(outputs[1].value >= -1.0)
     assert_true(outputs[1].value <= 1.0)
+
+
+def test_network_create_random():
+    """Test that NetworkMLP.create_random creates a valid network."""
+    clear_global_registry()
+
+    var net = NetworkMLP.create_random(
+        num_layers=2, input_size=3, hidden_size=4, output_size=2
+    )
+    var params = net.parameters()
+
+    # Hidden 1: 4 * (3 + 1) = 16, Hidden 2: 4 * (4 + 1) = 20, Output: 2 * (4 + 1) = 10
+    # Total = 46 parameters
+    assert_equal(len(params), 46)
+
+    # All values should be in range [-1.0, 1.0]
+    for p in params:
+        assert_true(p.value >= -1.0)
+        assert_true(p.value <= 1.0)
+
+    # Test forward pass works
+    var outputs = net([1.0, 2.0, 3.0])
+    assert_equal(len(outputs), 2)
 
 
 def main():
