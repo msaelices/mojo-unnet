@@ -156,6 +156,14 @@ struct NetworkMLP(Movable):
     var layers: List[Layer]
     var output_layer: Layer
 
+    fn __init__(out self):
+        """Initialize an empty network."""
+        self.input_size = 0
+        self.hidden_size = 0
+        self.output_size = 0
+        self.layers = List[Layer]()
+        self.output_layer = Layer()
+
     fn __init__(
         out self,
         num_layers: Int,
@@ -185,6 +193,45 @@ struct NetworkMLP(Movable):
                 self.layers.append(Layer(hidden_size, hidden_size))
         # Output layer: output_size neurons, hidden_size inputs
         self.output_layer = Layer(output_size, hidden_size)
+
+    @staticmethod
+    fn create_random(
+        num_layers: Int, input_size: Int, hidden_size: Int, output_size: Int = 1
+    ) -> NetworkMLP:
+        """Create an MLP with randomly initialized layers.
+
+        Creates a multi-layer perceptron where all layers have randomly
+        initialized weights and biases uniformly distributed between -1.0 and 1.0.
+
+        Args:
+            num_layers: Number of hidden layers.
+            input_size: Number of input features.
+            hidden_size: Number of neurons in each hidden layer.
+            output_size: Number of output neurons (default: 1).
+
+        Returns:
+            A NetworkMLP with randomly initialized parameters.
+        """
+        var network = NetworkMLP()
+        network.input_size = input_size
+        network.hidden_size = hidden_size
+        network.output_size = output_size
+        network.layers = List[Layer]()
+
+        for i in range(num_layers):
+            if i == 0:
+                # First hidden layer: hidden_size neurons, input_size inputs
+                network.layers.append(
+                    Layer.create_random(hidden_size, input_size)
+                )
+            else:
+                # Subsequent hidden layers: hidden_size neurons, hidden_size inputs
+                network.layers.append(
+                    Layer.create_random(hidden_size, hidden_size)
+                )
+        # Output layer: output_size neurons, hidden_size inputs
+        network.output_layer = Layer.create_random(output_size, hidden_size)
+        return network^
 
     fn __call__(self, inputs: List[Node]) -> List[Node]:
         """Forward pass through the network.

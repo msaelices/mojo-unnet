@@ -164,5 +164,28 @@ def test_network_multiple_outputs():
     assert_true(outputs[1].value <= 1.0)
 
 
+def test_network_create_random():
+    """Test that NetworkMLP.create_random creates a valid network."""
+    clear_global_registry()
+
+    var net = NetworkMLP.create_random(
+        num_layers=2, input_size=3, hidden_size=4, output_size=2
+    )
+    var params = net.parameters()
+
+    # Hidden 1: 4 * (3 + 1) = 16, Hidden 2: 4 * (4 + 1) = 20, Output: 2 * (4 + 1) = 10
+    # Total = 46 parameters
+    assert_equal(len(params), 46)
+
+    # All values should be in range [-1.0, 1.0]
+    for p in params:
+        assert_true(p.value >= -1.0)
+        assert_true(p.value <= 1.0)
+
+    # Test forward pass works
+    var outputs = net([1.0, 2.0, 3.0])
+    assert_equal(len(outputs), 2)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()
