@@ -10,17 +10,17 @@ struct Neuron(Copyable):
     var weights: List[Node]
     var bias: Node
 
-    fn __init__(out self, weight_values: List[Float64], bias_value: Float64):
+    fn __init__(out self, weights: List[Float64], bias: Float64):
         """Initialize a neuron with given weight values and bias.
 
         Args:
-            weight_values: List of initial weight values.
-            bias_value: Initial bias value.
+            weights: List of initial weight values.
+            bias: Initial bias value.
         """
         self.weights = List[Node]()
-        for i in range(len(weight_values)):
-            self.weights.append(Node(weight_values[i], "w"))
-        self.bias = Node(bias_value, "b")
+        for i, w in enumerate(weights):
+            self.weights.append(Node(w, "w{}".format(i)))
+        self.bias = Node(bias, "b")
 
     @staticmethod
     fn create_random(num_inputs: Int) -> Neuron:
