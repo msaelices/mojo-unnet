@@ -54,11 +54,11 @@ struct Neuron(Copyable):
             A Node representing the output of the neuron.
         """
         # Start with bias
-        var sum = self.bias
+        var sum: Node = self.bias
 
         # Add weighted inputs: sum += w_i * x_i
         for i, x in enumerate(inputs):
-            sum = sum + self.weights[i] * x
+            sum += self.weights[i] * x
 
         # Apply tanh activation
         return sum.tanh()
@@ -320,7 +320,7 @@ struct NetworkMLP(Movable):
                     var target: Node = desired_output[i][j]
                     var error = prediction - target
                     var squared_error = error**2.0
-                    loss = loss + squared_error
+                    loss += squared_error
 
             # Backward pass: zero gradients, then backpropagate
             self.zero_grads()
