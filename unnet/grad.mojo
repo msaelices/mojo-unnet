@@ -159,6 +159,26 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         return result^
 
     @always_inline
+    fn __iadd__(mut self, other: Node):
+        """In-place addition of two nodes.
+
+        Note: For the computation graph, this creates a new addition node
+        and assigns it to self, as we need to track the computation for
+        backpropagation.
+
+        Args:
+            other: The node to add.
+        """
+        var result = Node(
+            op=Op.ADD,
+            value=self.value + other.value,
+            parent1_uuid=self.uuid,
+            parent2_uuid=other.uuid,
+        )
+        _register_node(result)
+        self = result^
+
+    @always_inline
     fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
         var result = Node(

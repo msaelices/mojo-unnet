@@ -496,5 +496,31 @@ def test_walk_topo_single_node():
     assert_equal(topo[0], a.uuid)
 
 
+def test_iadd_creates_addition_node():
+    """Test that __iadd__ creates a proper addition node in the computation graph.
+    """
+    # Clear registry before test
+    clear_global_registry()
+
+    var a = Node(2.0, "a")
+    var b = Node(3.0, "b")
+
+    # Use += operator (should create addition node)
+    a += b
+    a.name = "result"
+
+    # Verify the result value
+    assert_equal(a.value, 5.0)
+
+    # Verify it has the ADD operation
+    assert_true(a.op == Op.ADD)
+
+    # Perform backpropagation to verify the graph structure
+    a.backward()
+
+    # Check gradients flow correctly through the iadd operation
+    assert_equal(a.get_grad(), 1.0)
+
+
 def main():
     TestSuite.discover_tests[__functions_in_module()]().run()
