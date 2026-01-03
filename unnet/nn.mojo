@@ -300,10 +300,11 @@ struct NetworkMLP(Movable):
             )
 
         var losses = List[Float64]()
+        var loss: Node
 
         for step in range(steps):
             # Forward pass: compute predictions and accumulate loss
-            var loss = Node(0.0)
+            loss = 0.0
             for i in range(len(training_data)):
                 # Convert input floats to Nodes
                 var input_nodes = List[Node]()
@@ -316,7 +317,7 @@ struct NetworkMLP(Movable):
                 # Compute loss for each output and sum
                 for j in range(len(outputs)):
                     var prediction = outputs[j]
-                    var target = Node(desired_output[i][j])
+                    var target: Node = desired_output[i][j]
                     var error = prediction - target
                     var squared_error = error**2.0
                     loss = loss + squared_error
