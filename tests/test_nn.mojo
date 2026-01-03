@@ -37,6 +37,22 @@ def test_neuron_forward_pass():
     assert_true(abs(result.value - 0.462) < 0.01)
 
 
+def test_neuron_create_random():
+    """Test that Neuron.create_random creates a valid neuron."""
+    clear_global_registry()
+
+    var neuron = Neuron.create_random(5)  # 5 inputs
+    var params = neuron.parameters()
+
+    # Should have 5 weights + 1 bias = 6 parameters
+    assert_equal(len(params), 6)
+
+    # All values should be in range [-1.0, 1.0]
+    for p in params:
+        assert_true(p.value >= -1.0)
+        assert_true(p.value <= 1.0)
+
+
 def test_layer_creation():
     """Test that a Layer can be created."""
     clear_global_registry()

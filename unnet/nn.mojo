@@ -1,5 +1,6 @@
 """Neural network components: Neuron, Layer, Network."""
 
+from random import random_float64
 from .grad import Node, clear_global_registry
 
 
@@ -20,6 +21,26 @@ struct Neuron(Copyable):
         for i in range(len(weight_values)):
             self.weights.append(Node(weight_values[i], "w"))
         self.bias = Node(bias_value, "b")
+
+    @staticmethod
+    fn create_random(num_inputs: Int) -> Neuron:
+        """Create a neuron with randomly initialized weights and bias.
+
+        Generates random weights and bias values uniformly distributed
+        between -1.0 and 1.0.
+
+        Args:
+            num_inputs: Number of inputs to the neuron (determines the
+                       number of weights to generate).
+
+        Returns:
+            A Neuron with randomly initialized parameters.
+        """
+        var weights = List[Float64]()
+        for _ in range(num_inputs):
+            weights.append(random_float64(-1.0, 1.0))
+        var bias = random_float64(-1.0, 1.0)
+        return Neuron(weights, bias)
 
     fn __call__(self, inputs: List[Node]) -> Node:
         """Forward pass through the neuron.
