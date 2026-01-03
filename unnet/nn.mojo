@@ -308,7 +308,7 @@ struct NetworkMLP(Movable):
                 # Convert input floats to Nodes
                 var input_nodes = List[Node]()
                 for val in training_data[i]:
-                    input_nodes.append(Node(val))
+                    input_nodes.append(val)
 
                 # Get all predictions
                 var outputs = self(input_nodes)
