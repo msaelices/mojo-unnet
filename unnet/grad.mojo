@@ -177,7 +177,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
             parent2_uuid = entry.parent2_uuid
 
         # Create a Node with the existing UUID and metadata
-        return Node(uuid, op, parent1_uuid, parent2_uuid, name)^
+        return Node(uuid, op, parent1_uuid, parent2_uuid, name)
 
     fn get_value(self) -> Float64:
         """Get the value from the registry (authoritative source).
