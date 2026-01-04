@@ -86,47 +86,74 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         self.parent2_uuid = None
         _register_node(self.uuid, value)
 
-    fn __init__(
-        out self,
+    @staticmethod
+    fn _create(
         value: Float64,
         op: Op,
-        var parent1_uuid: UUID,
-        var parent2_uuid: Optional[UUID] = None,
+        parent1_uuid: UUID,
+        parent2_uuid: Optional[UUID] = None,
         name: String = "N/A",
-    ):
-        """Initialize a node with a value and optional name."""
-        self.uuid = generate_uuid()
-        self.op = op
-        self.name = name
-        # Store parent UUIDs
-        self.parent1_uuid = parent1_uuid
-        self.parent2_uuid = parent2_uuid
-        # Note: don't register here - will be registered by the operator methods
-        # after construction to avoid double registration
+    ) -> Node:
+        """Create a node for an operation result (internal use only).
 
-    fn __init__(
-        out self,
+        This creates a new node with a generated UUID for operation results.
+        The node will be registered separately by the caller.
+
+        Args:
+            value: The computed value of the operation result.
+            op: The operation type.
+            parent1_uuid: First parent UUID.
+            parent2_uuid: Optional second parent UUID.
+            name: Optional node name.
+
+        Returns:
+            A new Node object with a generated UUID.
+
+        Note:
+            This is for internal use only by dunder operations.
+            The caller must register the node separately.
+        """
+        var node = Node(0.0, "__temp__")
+        node.uuid = generate_uuid()
+        node.op = op
+        node.name = name
+        node.parent1_uuid = parent1_uuid
+        node.parent2_uuid = parent2_uuid
+        return node
+
+    @staticmethod
+    fn _reconstruct(
         uuid: UUID,
         op: Op,
         parent1_uuid: Optional[UUID],
         parent2_uuid: Optional[UUID],
         name: String,
-    ):
-        """Initialize a node from an existing UUID (for reconstruction from registry).
+    ) -> Node:
+        """Reconstruct a Node from registry data (internal use only).
+
+        This creates a Node handle from existing registry data.
+        Does NOT register the node as it already exists in the registry.
 
         Args:
-            uuid: The existing UUID to use.
-            op: The operation type.
-            parent1_uuid: Optional first parent UUID.
-            parent2_uuid: Optional second parent UUID.
-            name: The node name.
+            uuid: The existing UUID from registry.
+            op: The operation type from registry.
+            parent1_uuid: Optional first parent UUID from registry.
+            parent2_uuid: Optional second parent UUID from registry.
+            name: The name to assign to the reconstructed node.
+
+        Returns:
+            A Node object with the specified UUID and metadata.
+
+        Note:
+            This is for internal use only by from_uuid() and graph traversal.
         """
-        self.uuid = uuid
-        self.op = op
-        self.name = name
-        self.parent1_uuid = parent1_uuid
-        self.parent2_uuid = parent2_uuid
-        # Don't register - this node already exists in the registry
+        var node = Node(0.0, "__temp__")
+        node.uuid = uuid
+        node.op = op
+        node.name = name
+        node.parent1_uuid = parent1_uuid
+        node.parent2_uuid = parent2_uuid
+        return node
 
     @always_inline
     fn __copyinit__(out self, other: Self):
@@ -177,7 +204,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
             parent2_uuid = entry.parent2_uuid
 
         # Create a Node with the existing UUID and metadata
-        return Node(uuid, op, parent1_uuid, parent2_uuid, name)
+        return Node._reconstruct(uuid, op, parent1_uuid, parent2_uuid, name)
 
     fn get_value(self) -> Float64:
         """Get the value from the registry (authoritative source).
@@ -210,9 +237,9 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     fn __add__(self, other: Node) -> Node:
         """Add two nodes."""
         var result_val = self.get_value() + other.get_value()
-        var result = Node(
-            op=Op.ADD,
+        var result = Node._create(
             value=result_val,
+            op=Op.ADD,
             parent1_uuid=self.uuid,
             parent2_uuid=other.uuid,
         )
@@ -231,9 +258,9 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
             other: The node to add.
         """
         var result_val = self.get_value() + other.get_value()
-        var result = Node(
-            op=Op.ADD,
+        var result = Node._create(
             value=result_val,
+            op=Op.ADD,
             parent1_uuid=self.uuid,
             parent2_uuid=other.uuid,
         )
@@ -244,9 +271,9 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     fn __sub__(self, var other: Node) -> Node:
         """Subtract two nodes."""
         var result_val = self.get_value() - other.get_value()
-        var result = Node(
-            op=Op.SUB,
+        var result = Node._create(
             value=result_val,
+            op=Op.SUB,
             parent1_uuid=self.uuid,
             parent2_uuid=other.uuid,
         )
@@ -257,7 +284,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     fn __mul__(self, var other: Node) -> Node:
         """Multiply two nodes."""
         var result_val = self.get_value() * other.get_value()
-        var result = Node(
+        var result = Node._create(
             value=result_val,
             op=Op.MUL,
             parent1_uuid=self.uuid,
@@ -270,7 +297,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     fn __pow__(self, exponent: Float64) -> Node:
         """Raise node to a power."""
         var result_val = self.get_value() ** exponent
-        var result = Node(
+        var result = Node._create(
             value=result_val,
             op=Op.POW,
             parent1_uuid=self.uuid,
@@ -282,7 +309,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result_val = math.tanh(self.get_value())
-        var result = Node(
+        var result = Node._create(
             value=result_val,
             op=Op.TANH,
             parent1_uuid=self.uuid,
