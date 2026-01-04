@@ -19,7 +19,7 @@ def test_node_implicit_init():
     clear_global_registry()
 
     var n: Node = 4.0
-    assert_equal(n.value, 4.0)
+    assert_equal(n.get_value(), 4.0)
     assert_equal(n.name, "N/A")
     assert_true(n.op == Op.NONE)
     assert_false(n.parent1_uuid)
@@ -510,7 +510,7 @@ def test_iadd_creates_addition_node():
     a.name = "result"
 
     # Verify the result value
-    assert_equal(a.value, 5.0)
+    assert_equal(a.get_value(), 5.0)
 
     # Verify it has the ADD operation
     assert_true(a.op == Op.ADD)

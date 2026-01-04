@@ -300,11 +300,10 @@ struct NetworkMLP(Movable):
             )
 
         var losses = List[Float64]()
-        var loss: Node
 
         for step in range(steps):
             # Forward pass: compute predictions and accumulate loss
-            loss = 0.0
+            var loss = Node(0.0)
             for i in range(len(training_data)):
                 # Convert input floats to Nodes
                 var input_nodes = List[Node]()
@@ -317,7 +316,7 @@ struct NetworkMLP(Movable):
                 # Compute loss for each output and sum
                 for j in range(len(outputs)):
                     var prediction = outputs[j]
-                    var target: Node = desired_output[i][j]
+                    var target = desired_output[i][j]
                     var error = prediction - target
                     var squared_error = error**2.0
                     loss += squared_error
@@ -328,15 +327,16 @@ struct NetworkMLP(Movable):
 
             # Update parameters with decaying learning rate
             var l_rate = 0.2 - 0.1 * Float64(step) / Float64(steps)
+
+            # Update parameters through registry
             var params = self.parameters()
             var registry_ptr = get_global_registry_ptr()
-
             for param in params:
                 var grad = param.get_grad()
-                var new_value = param.value - l_rate * grad
+                var new_value = param.get_value() - l_rate * grad
                 registry_ptr[].set_value(param.uuid, new_value)
 
             # Record loss
-            losses.append(loss.value)
+            losses.append(loss.get_value())
 
         return losses^

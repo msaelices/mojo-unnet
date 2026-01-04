@@ -34,7 +34,7 @@ def test_neuron_forward_pass():
     # tanh(0.5) ≈ 0.462
     var result = neuron([1.0, 2.0])
 
-    assert_true(abs(result.value - 0.462) < 0.01)
+    assert_true(abs(result.get_value() - 0.462) < 0.01)
 
 
 def test_neuron_create_random():
@@ -49,8 +49,8 @@ def test_neuron_create_random():
 
     # All values should be in range [-1.0, 1.0]
     for p in params:
-        assert_true(p.value >= -1.0)
-        assert_true(p.value <= 1.0)
+        assert_true(p.get_value() >= -1.0)
+        assert_true(p.get_value() <= 1.0)
 
 
 def test_layer_creation():
@@ -76,8 +76,8 @@ def test_layer_create_random():
 
     # All values should be in range [-1.0, 1.0]
     for p in params:
-        assert_true(p.value >= -1.0)
-        assert_true(p.value <= 1.0)
+        assert_true(p.get_value() >= -1.0)
+        assert_true(p.get_value() <= 1.0)
 
 
 def test_layer_forward_pass():
@@ -88,8 +88,8 @@ def test_layer_forward_pass():
     var outputs = layer([1.0, 2.0])
 
     assert_equal(len(outputs), 2)
-    assert_true(outputs[0].value >= -1.0)
-    assert_true(outputs[0].value <= 1.0)
+    assert_true(outputs[0].get_value() >= -1.0)
+    assert_true(outputs[0].get_value() <= 1.0)
 
 
 def test_network_creation():
@@ -110,8 +110,8 @@ def test_network_forward_pass():
     var outputs = net([1.0, 2.0])
 
     assert_equal(len(outputs), 1)
-    assert_true(outputs[0].value >= -1.0)
-    assert_true(outputs[0].value <= 1.0)
+    assert_true(outputs[0].get_value() >= -1.0)
+    assert_true(outputs[0].get_value() <= 1.0)
 
 
 def test_network_backward_pass():
@@ -158,10 +158,10 @@ def test_network_multiple_outputs():
     var outputs = net([1.0, 2.0])
 
     assert_equal(len(outputs), 2)
-    assert_true(outputs[0].value >= -1.0)
-    assert_true(outputs[0].value <= 1.0)
-    assert_true(outputs[1].value >= -1.0)
-    assert_true(outputs[1].value <= 1.0)
+    assert_true(outputs[0].get_value() >= -1.0)
+    assert_true(outputs[0].get_value() <= 1.0)
+    assert_true(outputs[1].get_value() >= -1.0)
+    assert_true(outputs[1].get_value() <= 1.0)
 
 
 def test_network_create_random():
@@ -179,8 +179,8 @@ def test_network_create_random():
 
     # All values should be in range [-1.0, 1.0]
     for p in params:
-        assert_true(p.value >= -1.0)
-        assert_true(p.value <= 1.0)
+        assert_true(p.get_value() >= -1.0)
+        assert_true(p.get_value() <= 1.0)
 
     # Test forward pass works
     var outputs = net([1.0, 2.0, 3.0])
