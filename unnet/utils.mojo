@@ -21,7 +21,7 @@ fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
     Returns:
         A tuple of (name, value, grad).
     """
-    return (node.name, node.value, node.get_grad())
+    return (node.name, node.get_value(), node.get_grad())
 
 
 fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
@@ -56,32 +56,35 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
         if current_uuid in visited:
             continue
 
-        # Look up the node in the registry (returns Optional)
+        # Look up the node state in the registry (returns Optional)
         var current_opt = registry_ptr[].get(current_uuid)
         if current_opt == None:
             continue
 
-        var current = current_opt.value().node
+        var current_state = current_opt.value()
         visited.append(current_uuid)
 
+        # Create a Node handle from the UUID using from_uuid
+        var current_node = Node.from_uuid(current_uuid)
+
         # Process parents using their UUIDs
-        if current.parent1_uuid:
-            var parent1_uuid = current.parent1_uuid.value()
+        if current_state.parent1_uuid:
+            var parent1_uuid = current_state.parent1_uuid.value()
             var parent1_opt = registry_ptr[].get(parent1_uuid)
             if parent1_opt:
-                var parent1 = parent1_opt.value().node
-                edges.append((parent1, current))
+                var parent1_node = Node.from_uuid(parent1_uuid)
+                edges.append((parent1_node, current_node))
                 stack.append(parent1_uuid)
 
-        if current.parent2_uuid:
-            var parent2_uuid = current.parent2_uuid.value()
+        if current_state.parent2_uuid:
+            var parent2_uuid = current_state.parent2_uuid.value()
             var parent2_opt = registry_ptr[].get(parent2_uuid)
             if parent2_opt:
-                var parent2 = parent2_opt.value().node
-                edges.append((parent2, current))
+                var parent2_node = Node.from_uuid(parent2_uuid)
+                edges.append((parent2_node, current_node))
                 stack.append(parent2_uuid)
 
-        nodes.append(current)
+        nodes.append(current_node)
 
     return nodes^, edges^
 
@@ -120,20 +123,23 @@ fn draw(var graph: Node) raises -> PythonObject:
         if current_uuid in visited:
             continue
 
-        # Look up the node in the registry
+        # Look up the node state in the registry
         var current_opt = registry_ptr[].get(current_uuid)
         if current_opt == None:
             continue
 
-        var current = current_opt.value().node
+        var current_state = current_opt.value()
         visited.append(current_uuid)
+
+        # Create a Node handle from the UUID
+        var current = Node.from_uuid(current_uuid)
 
         var node_id = get_node_id(current)
         var node_data = get_node_data(current)
         var name = node_data[0]
         var value = node_data[1]
         var grad = node_data[2]
-        var op = current.op
+        var op = current_state.op
 
         # Draw this node
         var label = String(name, " | v: ", value, " | g: ", grad)
@@ -146,8 +152,8 @@ fn draw(var graph: Node) raises -> PythonObject:
             plot.edge(op_node_id, node_id)
 
         # Process parents and create edges using UUIDs
-        if current.parent1_uuid:
-            var parent1_uuid = current.parent1_uuid.value()
+        if current_state.parent1_uuid:
+            var parent1_uuid = current_state.parent1_uuid.value()
             var parent1_opt = registry_ptr[].get(parent1_uuid)
             if parent1_opt:
                 var parent1_id = String(parent1_uuid)
@@ -157,8 +163,8 @@ fn draw(var graph: Node) raises -> PythonObject:
                     plot.edge(parent1_id, node_id)
                 stack.append(parent1_uuid)
 
-        if current.parent2_uuid:
-            var parent2_uuid = current.parent2_uuid.value()
+        if current_state.parent2_uuid:
+            var parent2_uuid = current_state.parent2_uuid.value()
             var parent2_opt = registry_ptr[].get(parent2_uuid)
             if parent2_opt:
                 var parent2_id = String(parent2_uuid)

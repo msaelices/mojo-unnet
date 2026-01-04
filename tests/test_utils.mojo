@@ -16,8 +16,8 @@ def test_node_creation():
     var node1 = Node(3.0, "x")
     var node2 = Node(5.0, "y")
 
-    assert_equal(node1.value, 3.0)
-    assert_equal(node2.value, 5.0)
+    assert_equal(node1.get_value(), 3.0)
+    assert_equal(node2.get_value(), 5.0)
     assert_equal(node1.name, "x")
     assert_equal(node2.name, "y")
     assert_equal(node1.get_grad(), 0.0)
@@ -31,19 +31,19 @@ def test_node_operations():
 
     # Test addition
     var c = a + b
-    assert_equal(c.value, 5.0)
+    assert_equal(c.get_value(), 5.0)
 
     # Test subtraction
     var d = a - b
-    assert_equal(d.value, -1.0)
+    assert_equal(d.get_value(), -1.0)
 
     # Test multiplication
     var e = a * b
-    assert_equal(e.value, 6.0)
+    assert_equal(e.get_value(), 6.0)
 
     # Test power
     var f = a**2.0
-    assert_equal(f.value, 4.0)
+    assert_equal(f.get_value(), 4.0)
 
 
 def test_node_tanh():
@@ -52,7 +52,7 @@ def test_node_tanh():
     var result = node.tanh()
 
     # tanh(0) should be 0
-    assert_equal(result.value, 0.0)
+    assert_equal(result.get_value(), 0.0)
 
     # Test with positive value
     var node2 = Node(1.0, "one")
@@ -60,7 +60,7 @@ def test_node_tanh():
 
     # tanh(1) ≈ 0.7615941559557649
     # Using approximate comparison (within tolerance)
-    assert_true(result2.value > 0.76 and result2.value < 0.77)
+    assert_true(result2.get_value() > 0.76 and result2.get_value() < 0.77)
 
 
 def test_node_backward():
@@ -80,7 +80,7 @@ def test_walk_single_node():
 
     assert_equal(len(nodes), 1)
     assert_equal(len(edges), 0)
-    assert_equal(nodes[0].value, 5.0)
+    assert_equal(nodes[0].get_value(), 5.0)
 
 
 def test_walk_simple_graph():

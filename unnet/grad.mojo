@@ -104,6 +104,30 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         # Note: don't register here - will be registered by the operator methods
         # after construction to avoid double registration
 
+    fn __init__(
+        out self,
+        uuid: UUID,
+        op: Op,
+        parent1_uuid: Optional[UUID],
+        parent2_uuid: Optional[UUID],
+        name: String,
+    ):
+        """Initialize a node from an existing UUID (for reconstruction from registry).
+
+        Args:
+            uuid: The existing UUID to use.
+            op: The operation type.
+            parent1_uuid: Optional first parent UUID.
+            parent2_uuid: Optional second parent UUID.
+            name: The node name.
+        """
+        self.uuid = uuid
+        self.op = op
+        self.name = name
+        self.parent1_uuid = parent1_uuid
+        self.parent2_uuid = parent2_uuid
+        # Don't register - this node already exists in the registry
+
     @always_inline
     fn __copyinit__(out self, other: Self):
         """Copy initializer for Node."""
@@ -125,6 +149,35 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     @always_inline
     fn __eq__(self, other: Self) -> Bool:
         return self.uuid == other.uuid
+
+    @staticmethod
+    fn from_uuid(uuid: UUID, name: String = "node") -> Node:
+        """Create a Node handle from an existing UUID.
+
+        This reconstructs a Node object from the registry using the UUID.
+        The Node's op and parent UUIDs are read from the NodeState in registry.
+
+        Args:
+            uuid: The UUID of the node to reconstruct.
+            name: The name to assign to the reconstructed node.
+
+        Returns:
+            A Node object with the given UUID and metadata from registry.
+        """
+        var registry_ptr = get_global_registry_ptr()
+        var entry_opt = registry_ptr[].get(uuid)
+        var op = Op(0)  # Op.NONE
+        var parent1_uuid: Optional[UUID] = None
+        var parent2_uuid: Optional[UUID] = None
+
+        if entry_opt:
+            var entry = entry_opt.value()
+            op = entry.op
+            parent1_uuid = entry.parent1_uuid
+            parent2_uuid = entry.parent2_uuid
+
+        # Create a Node with the existing UUID and metadata
+        return Node(uuid, op, parent1_uuid, parent2_uuid, name)^
 
     fn get_value(self) -> Float64:
         """Get the value from the registry (authoritative source).
