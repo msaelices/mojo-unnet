@@ -70,10 +70,7 @@ pixi install
 ### Basic Autograd Example
 
 ```mojo
-from unnet import Node, clear_global_registry
-
-# Clear the registry before starting
-clear_global_registry()
+from unnet import Node
 
 # Create input nodes (leaf nodes)
 var a = Node(2.0, "a")
@@ -99,10 +96,7 @@ print(c.get_grad())  # 1.0
 ### Neural Network Example
 
 ```mojo
-from unnet import NetworkMLP, Node, clear_global_registry
-
-# Clear the registry before starting
-clear_global_registry()
+from unnet import NetworkMLP, Node
 
 # Create a 2-layer MLP with 2 inputs, 2 hidden neurons, 1 output
 var net = NetworkMLP(num_layers=2, input_size=2, hidden_size=2)
@@ -123,10 +117,7 @@ net.zero_grads()
 ### Training Example
 
 ```mojo
-from unnet import NetworkMLP, clear_global_registry
-
-# Clear the registry before starting
-clear_global_registry()
+from unnet import NetworkMLP
 
 # Create a network with random initialization
 var net = NetworkMLP.create_random(
