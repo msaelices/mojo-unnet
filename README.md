@@ -85,7 +85,7 @@ var d = a * b
 var e = d + c
 
 # Forward pass: compute value
-print(e.value)  # 4.0
+print(e.get_value())  # 4.0
 
 # Backward pass: compute gradients
 e.backward()
