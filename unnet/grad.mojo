@@ -194,6 +194,10 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         return result^
 
     @always_inline
+    def __rpow__(self, other):
+        return self**other
+
+    @always_inline
     fn tanh(self) -> Node:
         """Apply hyperbolic tangent activation."""
         var result_val = math.tanh(self.value)
