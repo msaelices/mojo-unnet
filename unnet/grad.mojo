@@ -402,6 +402,19 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
                                 * node_grad
                             ),
                         )
+                elif node.parent1_uuid:
+                    # Power with constant exponent (x^const where const is not in graph).
+                    # For now, handles x^2 which is the common case for squared error loss.
+                    # TODO: Store the exponent value in __pow__ to handle arbitrary powers.
+                    ref p1_opt = registry_ptr[].get(node.parent1_uuid.value())
+                    if p1_opt:
+                        var p1_entry = p1_opt.value()
+                        # For x^2: d/dx(x^2) = 2*x
+                        var exponent = 2.0
+                        registry_ptr[].add_to_grad(
+                            node.parent1_uuid.value(),
+                            (exponent * p1_entry.node.value * node_grad),
+                        )
 
     fn write_to(self, mut writer: Some[Writer]):
         writer.write("[", self.name, "|", self.value, "|", self.get_grad(), "]")
