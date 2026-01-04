@@ -11,9 +11,7 @@ def test_neuron_creation():
     """Test that a Neuron can be created."""
     clear_global_registry()
 
-    var weights = List[Float64]()
-    weights.append(0.1)
-    weights.append(0.2)
+    var weights: List[Float64] = [0.1, 0.2]
     var neuron = Neuron(weights, 0.0)
     var params = neuron.parameters()
     assert_equal(len(params), 3)  # 2 weights + 1 bias
@@ -23,9 +21,7 @@ def test_neuron_forward_pass():
     """Test the forward pass through a neuron."""
     clear_global_registry()
 
-    var weights = List[Float64]()
-    weights.append(0.1)
-    weights.append(0.2)
+    var weights: List[Float64] = [0.1, 0.2]
     var neuron = Neuron(weights, 0.0)
 
     # Forward pass with inputs [1.0, 2.0]
@@ -197,17 +193,19 @@ def test_network_train_single_output():
     )
 
     # Simple training data: learn XOR function
-    var training_data = List[List[Float64]]()
-    training_data.append([0.0, 0.0])
-    training_data.append([1.0, 0.0])
-    training_data.append([0.0, 1.0])
-    training_data.append([1.0, 1.0])
+    var training_data: List[List[Float64]] = [
+        [0.0, 0.0],
+        [1.0, 0.0],
+        [0.0, 1.0],
+        [1.0, 1.0],
+    ]
 
-    var desired_output = List[List[Float64]]()
-    desired_output.append([0.0])
-    desired_output.append([1.0])
-    desired_output.append([1.0])
-    desired_output.append([0.0])
+    var desired_output: List[List[Float64]] = [
+        [0.0],
+        [1.0],
+        [1.0],
+        [0.0],
+    ]
 
     # Train for 10 steps
     var losses = net.train(training_data, desired_output, steps=10)
@@ -229,13 +227,15 @@ def test_network_train_multi_output():
     )
 
     # Training data
-    var training_data = List[List[Float64]]()
-    training_data.append([0.0, 0.0])
-    training_data.append([1.0, 1.0])
+    var training_data: List[List[Float64]] = [
+        [0.0, 1.0],
+        [1.0, 0.0],
+    ]
 
-    var desired_output = List[List[Float64]]()
-    desired_output.append([0.0, 1.0])
-    desired_output.append([1.0, 0.0])
+    var desired_output: List[List[Float64]] = [
+        [0.0, 1.0],
+        [1.0, 0.0],
+    ]
 
     # Train for 10 steps
     var losses = net.train(training_data, desired_output, steps=10)
