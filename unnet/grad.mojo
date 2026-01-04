@@ -351,7 +351,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
     fn backward(mut self):
         """Compute gradients via backpropagation using the global registry.
 
-        The registry stores GradEntry(grad, node) for each UUID.
+        The registry stores NodeState(grad, node) for each UUID.
 
         Note: This does NOT reset gradients before computation.
         Call zero_grad() explicitly before backward() if needed,
@@ -460,7 +460,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
 # Consolidated here to avoid circular dependency with separate registry module
 
 
-struct GradEntry(ImplicitlyCopyable, Movable):
+struct NodeState(ImplicitlyCopyable, Movable):
     var grad: Float64
     var value: Float64  # Store value directly (not the full Node)
     var op: Op  # Store operation type for backward pass
@@ -482,10 +482,10 @@ struct GradEntry(ImplicitlyCopyable, Movable):
         self.parent2_uuid = parent2_uuid
 
 
-comptime RegType = GradEntry
+comptime RegType = NodeState
 
 
-struct GradRegistry(Copyable):
+struct NodeRegistry(Copyable):
     """Global registry of all gradients and nodes in the computation graph.
 
     This struct maintains two dictionaries:
@@ -543,7 +543,7 @@ struct GradRegistry(Copyable):
             parent1_uuid: Optional first parent UUID.
             parent2_uuid: Optional second parent UUID.
         """
-        self._registry[uuid] = GradEntry(
+        self._registry[uuid] = NodeState(
             value=value,
             grad=grad,
             op=op,
@@ -615,13 +615,13 @@ struct GradRegistry(Copyable):
             self.set_grad(uuid, 0.0)
 
 
-fn _init_node_registry() -> GradRegistry:
+fn _init_node_registry() -> NodeRegistry:
     """Initialize the global node registry.
 
     Returns:
-        A new GradRegistry instance.
+        A new NodeRegistry instance.
     """
-    return GradRegistry()
+    return NodeRegistry()
 
 
 # Global node registry instance
@@ -629,7 +629,7 @@ comptime _global_registry = _Global["node_registry", _init_node_registry]
 
 
 fn _get_global_registry_ptr() -> (
-    UnsafePointer[GradRegistry, MutOrigin.external]
+    UnsafePointer[NodeRegistry, MutOrigin.external]
 ):
     """Get the global registry pointer (internal).
 
@@ -664,7 +664,7 @@ fn _register_node(
     ptr[].register(uuid, value, 0.0, op, parent1_uuid, parent2_uuid)
 
 
-fn get_global_registry_ptr() -> UnsafePointer[GradRegistry, MutOrigin.external]:
+fn get_global_registry_ptr() -> UnsafePointer[NodeRegistry, MutOrigin.external]:
     """Get the global registry pointer.
 
     Returns:
