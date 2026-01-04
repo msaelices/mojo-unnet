@@ -100,7 +100,7 @@ fn draw(var graph: Node) raises -> PythonObject:
 
     Note:
         Returns an empty PythonObject if graphviz is not installed.
-        Install with: pip install graphviz
+        Install with: pip install graphviz.
     """
     # Import graphviz module
     var graphviz_module = Python.import_module("graphviz")
