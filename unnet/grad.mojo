@@ -119,7 +119,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         node.name = name
         node.parent1_uuid = parent1_uuid
         node.parent2_uuid = parent2_uuid
-        return node
+        return node^
 
     @staticmethod
     fn _reconstruct(
@@ -153,7 +153,7 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         node.name = name
         node.parent1_uuid = parent1_uuid
         node.parent2_uuid = parent2_uuid
-        return node
+        return node^
 
     @always_inline
     fn __copyinit__(out self, other: Self):
