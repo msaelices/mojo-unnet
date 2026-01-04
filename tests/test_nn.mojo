@@ -211,8 +211,6 @@ def test_network_train_single_output():
 
     # Train for 10 steps
     var losses = net.train(training_data, desired_output, steps=10)
-    for loss in losses:
-        print("Loss:", loss)
 
     # Check that we got loss values
     assert_equal(len(losses), 10)
