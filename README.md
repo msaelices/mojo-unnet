@@ -160,7 +160,6 @@ mojo-unnet/
 │   ├── test_nn.mojo     # Tests for neural network components
 │   └── test_utils.mojo  # Tests for utilities
 ├── .github/workflows/   # CI/CD
-├── pyproject.toml       # Project configuration
 └── pixi.toml            # Pixi package manager configuration
 ```
 
