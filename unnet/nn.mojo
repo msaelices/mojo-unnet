@@ -300,11 +300,10 @@ struct NetworkMLP(Movable):
             )
 
         var losses = List[Float64]()
-        var loss: Node
 
         for step in range(steps):
             # Forward pass: compute predictions and accumulate loss
-            loss = 0.0
+            var loss = Node(0.0)
             for i in range(len(training_data)):
                 # Convert input floats to Nodes
                 var input_nodes = List[Node]()
@@ -317,7 +316,7 @@ struct NetworkMLP(Movable):
                 # Compute loss for each output and sum
                 for j in range(len(outputs)):
                     var prediction = outputs[j]
-                    var target: Node = desired_output[i][j]
+                    var target = desired_output[i][j]
                     var error = prediction - target
                     var squared_error = error**2.0
                     loss = loss + squared_error
@@ -328,13 +327,51 @@ struct NetworkMLP(Movable):
 
             # Update parameters with decaying learning rate
             var l_rate = 0.2 - 0.1 * Float64(step) / Float64(steps)
-            var params = self.parameters()
-            var registry_ptr = get_global_registry_ptr()
 
-            for param in params:
-                var grad = param.get_grad()
-                var new_value = param.value - l_rate * grad
-                registry_ptr[].set_value(param.uuid, new_value)
+            # Not working through registry, updating directly
+            # var params = self.parameters()
+            # var registry_ptr = get_global_registry_ptr()
+            # for param in params:
+            #     var grad = param.get_grad()
+            #     var new_value = param.value - l_rate * grad
+            #     registry_ptr[].set_value(param.uuid, new_value)
+
+            # Update weights and biases directly in the network layers
+            for li in range(len(self.layers)):
+                for ni in range(len(self.layers[li].neurons)):
+                    for w_idx in range(
+                        len(self.layers[li].neurons[ni].weights)
+                    ):
+                        var grad = (
+                            self.layers[li]
+                            .neurons[ni]
+                            .weights[w_idx]
+                            .get_grad()
+                        )
+                        self.layers[li].neurons[ni].weights[w_idx].value = (
+                            self.layers[li].neurons[ni].weights[w_idx].value
+                            - l_rate * grad
+                        )
+                    var bias_grad = self.layers[li].neurons[ni].bias.get_grad()
+                    self.layers[li].neurons[ni].bias.value = (
+                        self.layers[li].neurons[ni].bias.value
+                        - l_rate * bias_grad
+                    )
+
+            for ni in range(len(self.output_layer.neurons)):
+                for w_idx in range(len(self.output_layer.neurons[ni].weights)):
+                    var grad = (
+                        self.output_layer.neurons[ni].weights[w_idx].get_grad()
+                    )
+                    self.output_layer.neurons[ni].weights[w_idx].value = (
+                        self.output_layer.neurons[ni].weights[w_idx].value
+                        - l_rate * grad
+                    )
+                var bias_grad = self.output_layer.neurons[ni].bias.get_grad()
+                self.output_layer.neurons[ni].bias.value = (
+                    self.output_layer.neurons[ni].bias.value
+                    - l_rate * bias_grad
+                )
 
             # Record loss
             losses.append(loss.value)
