@@ -101,8 +101,8 @@ struct UUID(
             if i == 4 or i == 6 or i == 8 or i == 10:
                 result += "-"
             result += (
-                hex_digits[Int(self.bytes[i] >> 4)]
-                + hex_digits[Int(self.bytes[i] & 0xF)]
+                hex_digits[byte = Int(self.bytes[i] >> 4)]
+                + hex_digits[byte = Int(self.bytes[i] & 0xF)]
             )
         return result
 
