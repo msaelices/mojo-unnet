@@ -704,9 +704,7 @@ fn _init_node_registry() -> NodeRegistry:
 comptime _global_registry = _Global["node_registry", _init_node_registry]
 
 
-fn _get_global_registry_ptr() -> (
-    UnsafePointer[NodeRegistry, MutOrigin.external]
-):
+fn _get_global_registry_ptr() -> UnsafePointer[NodeRegistry, MutExternalOrigin]:
     """Get the global registry pointer (internal).
 
     Returns:
@@ -740,7 +738,7 @@ fn _register_node(
     ptr[].register(uuid, value, 0.0, op, parent1_uuid, parent2_uuid)
 
 
-fn get_global_registry_ptr() -> UnsafePointer[NodeRegistry, MutOrigin.external]:
+fn get_global_registry_ptr() -> UnsafePointer[NodeRegistry, MutExternalOrigin]:
     """Get the global registry pointer.
 
     Returns:
