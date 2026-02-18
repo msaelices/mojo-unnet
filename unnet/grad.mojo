@@ -5,7 +5,7 @@ import math
 import os
 from collections.dict import DictKeyError, _DictKeyIter
 from memory import UnsafePointer
-from sys.ffi import _Global
+from ffi import _Global
 from unnet.uuid import generate_uuid, UUID
 
 
