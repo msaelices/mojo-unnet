@@ -5,7 +5,7 @@ import math
 import os
 from collections.dict import DictKeyError, _DictKeyIter
 from memory import UnsafePointer
-from sys.ffi import _Global
+from ffi import _Global
 from unnet.uuid import generate_uuid, UUID
 
 
@@ -156,13 +156,13 @@ struct Node(Equatable, ImplicitlyCopyable, Movable, Representable, Writable):
         return node^
 
     @always_inline
-    fn __copyinit__(out self, other: Self):
+    fn __copyinit__(out self, copy: Self):
         """Copy initializer for Node."""
-        self.uuid = other.uuid
-        self.op = other.op
-        self.name = other.name
-        self.parent1_uuid = other.parent1_uuid
-        self.parent2_uuid = other.parent2_uuid
+        self.uuid = copy.uuid
+        self.op = copy.op
+        self.name = copy.name
+        self.parent1_uuid = copy.parent1_uuid
+        self.parent2_uuid = copy.parent2_uuid
         # var call_location = __call_location()
         # print("Copying Node:", self.uuid, self.name, "in ", call_location)
 

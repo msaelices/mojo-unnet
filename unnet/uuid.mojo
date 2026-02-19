@@ -5,8 +5,7 @@ from utils import StaticTuple
 from hashlib.hasher import Hasher
 
 
-@register_passable("trivial")
-struct MersenneTwister:
+struct MersenneTwister(TrivialRegisterPassable):
     """
     Pseudo-random generator Mersenne Twister (MT19937-32bit).
     """
@@ -29,11 +28,11 @@ struct MersenneTwister:
 
         self.index = Self.N
         self.state = StaticTuple[Int32, Self.N]()
-        self.state[0] = seed & D
+        self.state[0] = Int32(seed) & D
 
         for i in range(1, Self.N):
             self.state[i] = (
-                F * (self.state[i - 1] ^ (self.state[i - 1] >> (W - 2))) + i
+                F * (self.state[i - 1] ^ (self.state[i - 1] >> Int32(W - 2))) + Int32(i)
             ) & D
 
     fn next(mut self) -> Int32:
@@ -61,9 +60,8 @@ struct MersenneTwister:
         return UInt8(self.next()) & 0xFF
 
 
-@register_passable("trivial")
 struct UUID(
-    Copyable, Equatable, Hashable, Movable, Representable, Stringable, Writable
+    TrivialRegisterPassable, Equatable, Hashable, Representable, Stringable, Writable
 ):
     var bytes: StaticTuple[UInt8, 16]
 
@@ -101,8 +99,8 @@ struct UUID(
             if i == 4 or i == 6 or i == 8 or i == 10:
                 result += "-"
             result += (
-                hex_digits[byte = Int(self.bytes[i] >> 4)]
-                + hex_digits[byte = Int(self.bytes[i] & 0xF)]
+                hex_digits[byte=Int(self.bytes[i] >> 4)]
+                + hex_digits[byte=Int(self.bytes[i] & 0xF)]
             )
         return result
 
@@ -113,8 +111,7 @@ struct UUID(
         writer.write(String(self))
 
 
-@register_passable("trivial")
-struct UUIDGenerator:
+struct UUIDGenerator(TrivialRegisterPassable):
     var prng: MersenneTwister
 
     fn __init__(out self, seed: Int):
