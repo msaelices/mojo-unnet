@@ -1,6 +1,6 @@
 """Tests for unnet/utils.mojo visualization and graph traversal functions."""
 
-from testing import (
+from std.testing import (
     assert_equal,
     assert_true,
     TestSuite,

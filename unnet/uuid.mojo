@@ -1,8 +1,8 @@
 # Adapted from https://github.com/basalt-org/basalt/blob/076de80812dde323d9de63ea8975ad1875243dc0/basalt/utils/uuid.mojo
 
-from time import perf_counter_ns
-from utils import StaticTuple
-from hashlib.hasher import Hasher
+from std.time import perf_counter_ns
+from std.utils import StaticTuple
+from std.hashlib.hasher import Hasher
 
 
 struct MersenneTwister(TrivialRegisterPassable):
@@ -21,7 +21,7 @@ struct MersenneTwister(TrivialRegisterPassable):
     var state: StaticTuple[Int32, Self.N]
     var index: Int
 
-    fn __init__(out self, seed: Int):
+    def __init__(out self, seed: Int):
         comptime W: Int = 32
         comptime F: Int32 = 1812433253
         comptime D: Int32 = 0xFFFFFFFF
@@ -32,10 +32,11 @@ struct MersenneTwister(TrivialRegisterPassable):
 
         for i in range(1, Self.N):
             self.state[i] = (
-                F * (self.state[i - 1] ^ (self.state[i - 1] >> Int32(W - 2))) + Int32(i)
+                F * (self.state[i - 1] ^ (self.state[i - 1] >> Int32(W - 2)))
+                + Int32(i)
             ) & D
 
-    fn next(mut self) -> Int32:
+    def next(mut self) -> Int32:
         if self.index >= Self.N:
             for i in range(Self.N):
                 var x = (self.state[i] & Self.UPPER_MASK) + (
@@ -56,27 +57,24 @@ struct MersenneTwister(TrivialRegisterPassable):
 
         return y
 
-    fn next_ui8(mut self) -> UInt8:
+    def next_ui8(mut self) -> UInt8:
         return UInt8(self.next()) & 0xFF
 
 
-struct UUID(
-    TrivialRegisterPassable, Equatable, Hashable, Representable, Stringable, Writable
-):
+struct UUID(Equatable, Hashable, TrivialRegisterPassable, Writable):
     var bytes: StaticTuple[UInt8, 16]
 
-    fn __init__(out self):
+    def __init__(out self):
         self.bytes = StaticTuple[UInt8, 16]()
 
-    fn __setitem__(mut self, index: Int, value: UInt8):
+    def __setitem__(mut self, index: Int, value: UInt8):
         self.bytes[index] = value
 
-    fn __getitem__(self, index: Int) -> UInt8:
+    def __getitem__(self, index: Int) -> UInt8:
         return self.bytes[index]
 
     fn __eq__(self, other: Self) -> Bool:
-        @parameter
-        for i in range(16):
+        comptime for i in range(16):
             if self.bytes[i] != other.bytes[i]:
                 return False
         return True
@@ -86,16 +84,14 @@ struct UUID(
 
     fn __hash__[H: Hasher](self, mut hasher: H):
         # Hash all bytes
-        @parameter
-        for i in range(16):
+        comptime for i in range(16):
             hasher.update(self.bytes[i])
 
     fn __str__(self) -> String:
         var result: String = ""
         comptime hex_digits: String = "0123456789abcdef"
 
-        @parameter
-        for i in range(16):
+        comptime for i in range(16):
             if i == 4 or i == 6 or i == 8 or i == 10:
                 result += "-"
             result += (
@@ -104,24 +100,23 @@ struct UUID(
             )
         return result
 
-    fn __repr__(self) -> String:
+    def __repr__(self) -> String:
         return "UUID(" + self.__str__() + ")"
 
     fn write_to(self, mut writer: Some[Writer]) -> None:
-        writer.write(String(self))
+        writer.write(self.__str__())
 
 
 struct UUIDGenerator(TrivialRegisterPassable):
     var prng: MersenneTwister
 
-    fn __init__(out self, seed: Int):
+    def __init__(out self, seed: Int):
         self.prng = MersenneTwister(seed)
 
-    fn next(mut self) -> UUID:
+    def next(mut self) -> UUID:
         var uuid = UUID()
 
-        @parameter
-        for i in range(16):
+        comptime for i in range(16):
             uuid[i] = self.prng.next_ui8()
 
         # Version 4, variant 10xx
@@ -131,7 +126,7 @@ struct UUIDGenerator(TrivialRegisterPassable):
         return uuid
 
 
-fn generate_uuid(seed: Optional[Int] = None) -> UUID:
+def generate_uuid(seed: Optional[Int] = None) -> UUID:
     """Generate a new UUID using a Mersenne Twister PRNG seeded with the given seed.
 
     Args:
