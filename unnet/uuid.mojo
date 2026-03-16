@@ -32,7 +32,8 @@ struct MersenneTwister(TrivialRegisterPassable):
 
         for i in range(1, Self.N):
             self.state[i] = (
-                F * (self.state[i - 1] ^ (self.state[i - 1] >> Int32(W - 2))) + Int32(i)
+                F * (self.state[i - 1] ^ (self.state[i - 1] >> Int32(W - 2)))
+                + Int32(i)
             ) & D
 
     def next(mut self) -> Int32:
@@ -60,9 +61,7 @@ struct MersenneTwister(TrivialRegisterPassable):
         return UInt8(self.next()) & 0xFF
 
 
-struct UUID(
-    TrivialRegisterPassable, Equatable, Hashable, Writable
-):
+struct UUID(Equatable, Hashable, TrivialRegisterPassable, Writable):
     var bytes: StaticTuple[UInt8, 16]
 
     def __init__(out self):

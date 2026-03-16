@@ -707,7 +707,9 @@ fn _init_node_registry() -> NodeRegistry:
 comptime _global_registry = _Global["node_registry", _init_node_registry]
 
 
-def _get_global_registry_ptr() -> UnsafePointer[NodeRegistry, MutExternalOrigin]:
+def _get_global_registry_ptr() -> (
+    UnsafePointer[NodeRegistry, MutExternalOrigin]
+):
     """Get the global registry pointer (internal).
 
     Returns:
