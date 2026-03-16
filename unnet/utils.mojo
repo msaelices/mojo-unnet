@@ -1,18 +1,18 @@
 """Utility functions for visualization and graph traversal."""
 
-import os
+import std.os as os
 from .grad import Edge, Node, Op, get_global_registry_ptr
-from python import Python, PythonObject
+from std.python import Python, PythonObject
 
 # Helper functions for graph traversal and visualization
 
 
-fn get_node_id(node: Node) -> String:
+def get_node_id(node: Node) -> String:
     """Get a unique string identifier for any node variant."""
     return String(node.uuid)
 
 
-fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
+def get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
     """Extract name, value, and grad from a node.
 
     Args:
@@ -24,7 +24,7 @@ fn get_node_data(node: Node) -> Tuple[String, Float64, Float64]:
     return (node.name, node.get_value(), node.get_grad())
 
 
-fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
+def walk(root: Node) -> Tuple[List[Node], List[Edge]]:
     """Walk the computation graph and collect nodes and edges.
 
     Uses the global registry to look up parent nodes by UUID.
@@ -89,7 +89,7 @@ fn walk(root: Node) -> Tuple[List[Node], List[Edge]]:
     return nodes^, edges^
 
 
-fn draw(var graph: Node) raises -> PythonObject:
+def draw(var graph: Node) raises -> PythonObject:
     """Create a graphviz visualization of the computation graph.
 
     Args:

@@ -1,6 +1,6 @@
 """Neural network components: Neuron, Layer, Network."""
 
-from random import random_float64
+from std.random import random_float64
 from .grad import Node, clear_global_registry
 
 
@@ -10,7 +10,7 @@ struct Neuron(Copyable):
     var weights: List[Node]
     var bias: Node
 
-    fn __init__(out self, weights: List[Float64], bias: Float64):
+    def __init__(out self, weights: List[Float64], bias: Float64):
         """Initialize a neuron with given weight values and bias.
 
         Args:
@@ -23,7 +23,7 @@ struct Neuron(Copyable):
         self.bias = Node(bias, "b")
 
     @staticmethod
-    fn create_random(num_inputs: Int) -> Neuron:
+    def create_random(num_inputs: Int) -> Neuron:
         """Create a neuron with randomly initialized weights and bias.
 
         Generates random weights and bias values uniformly distributed
@@ -42,7 +42,7 @@ struct Neuron(Copyable):
         var bias = random_float64(-1.0, 1.0)
         return Neuron(weights, bias)
 
-    fn __call__(self, inputs: List[Node]) -> Node:
+    def __call__(self, inputs: List[Node]) -> Node:
         """Forward pass through the neuron.
 
         Computes: activation(sum(w_i * x_i) + b)
@@ -63,7 +63,7 @@ struct Neuron(Copyable):
         # Apply tanh activation
         return sum.tanh()
 
-    fn parameters(self) -> List[Node]:
+    def parameters(self) -> List[Node]:
         """Return all trainable parameters (weights and biases).
 
         Returns:
@@ -81,11 +81,11 @@ struct Layer(Copyable, Movable):
 
     var neurons: List[Neuron]
 
-    fn __init__(out self):
+    def __init__(out self):
         """Initialize an empty layer."""
         self.neurons = List[Neuron]()
 
-    fn __init__(out self, num_neurons: Int, num_inputs: Int):
+    def __init__(out self, num_neurons: Int, num_inputs: Int):
         """Initialize a layer with neurons.
 
         Args:
@@ -93,7 +93,7 @@ struct Layer(Copyable, Movable):
             num_inputs: Number of inputs to each neuron.
         """
         self.neurons = List[Neuron]()
-        for i in range(num_neurons):
+        for _ in range(num_neurons):
             var weights = List[Float64]()
             for j in range(num_inputs):
                 # Create weights: [0.1, 0.2, 0.3, ...] based on position
@@ -101,7 +101,7 @@ struct Layer(Copyable, Movable):
             self.neurons.append(Neuron(weights, 0.0))
 
     @staticmethod
-    fn create_random(num_neurons: Int, num_inputs: Int) -> Layer:
+    def create_random(num_neurons: Int, num_inputs: Int) -> Layer:
         """Create a layer with randomly initialized neurons.
 
         Creates a layer where each neuron has randomly initialized weights
@@ -120,7 +120,7 @@ struct Layer(Copyable, Movable):
             layer.neurons.append(Neuron.create_random(num_inputs))
         return layer^
 
-    fn __call__(self, inputs: List[Node]) -> List[Node]:
+    def __call__(self, inputs: List[Node]) -> List[Node]:
         """Forward pass through the layer.
 
         Args:
@@ -134,7 +134,7 @@ struct Layer(Copyable, Movable):
             outputs.append(neuron(inputs))
         return outputs^
 
-    fn parameters(self) -> List[Node]:
+    def parameters(self) -> List[Node]:
         """Return all trainable parameters.
 
         Returns:
@@ -156,7 +156,7 @@ struct NetworkMLP(Movable):
     var layers: List[Layer]
     var output_layer: Layer
 
-    fn __init__(out self):
+    def __init__(out self):
         """Initialize an empty network."""
         self.input_size = 0
         self.hidden_size = 0
@@ -164,7 +164,7 @@ struct NetworkMLP(Movable):
         self.layers = List[Layer]()
         self.output_layer = Layer()
 
-    fn __init__(
+    def __init__(
         out self,
         num_layers: Int,
         input_size: Int,
@@ -195,7 +195,7 @@ struct NetworkMLP(Movable):
         self.output_layer = Layer(output_size, hidden_size)
 
     @staticmethod
-    fn create_random(
+    def create_random(
         num_layers: Int, input_size: Int, hidden_size: Int, output_size: Int = 1
     ) -> NetworkMLP:
         """Create an MLP with randomly initialized layers.
@@ -233,7 +233,7 @@ struct NetworkMLP(Movable):
         network.output_layer = Layer.create_random(output_size, hidden_size)
         return network^
 
-    fn __call__(self, inputs: List[Node]) -> List[Node]:
+    def __call__(self, inputs: List[Node]) -> List[Node]:
         """Forward pass through the network.
 
         Args:
@@ -251,7 +251,7 @@ struct NetworkMLP(Movable):
         # Return the final output layer outputs
         return self.output_layer(current_inputs)
 
-    fn parameters(self) -> List[Node]:
+    def parameters(self) -> List[Node]:
         """Return all trainable parameters.
 
         Returns:
@@ -265,13 +265,13 @@ struct NetworkMLP(Movable):
             params.append(p)
         return params^
 
-    fn zero_grads(mut self):
+    def zero_grads(mut self):
         """Zero out all gradients in the network."""
         var params = self.parameters()
         for i in range(len(params)):
             params[i].zero_grad()
 
-    fn train(
+    def train(
         mut self,
         training_data: List[List[Float64]],
         desired_output: List[List[Float64]],
